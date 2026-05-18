@@ -26,4 +26,4 @@ These are ready to slice into story packets when selected:
 - **Cross-S01**: Validate all services reachable on llm-net from evaluation container.
 - **Cross-S02**: Add top-level orchestration docker-compose.yml.
 - **Cross-S03**: Add GPU availability pre-check script.
-- **Cross-S04**: Fix compose-contract drift for Unsloth Ollama reachability and Qwen-VL healthcheck/env configuration.
+- **Cross-S04**: Fix compose-contract drift for Unsloth Ollama reachability and Qwen-VL healthcheck/env configuration. _(implemented — see `docs/stories/epics/cross/Cross-S04-compose-contract-drift.md`)_

@@ -7,7 +7,7 @@ services:
       JUPYTER_PASSWORD: "passd"
       USER_PASSWORD: "12345678"
       # JUPYTER_PORT: 8888
-      OLLAMA_HOST: "http://localhost:11434"
+      OLLAMA_HOST: "http://ollama:11434"
     ports:
       - "8888:8888"
       - "8001:8000"
