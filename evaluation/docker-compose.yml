@@ -1,0 +1,13 @@
+services:
+  evaluation:
+    build: .
+    container_name: evaluation
+    volumes:
+      - ./scripts:/app/scripts
+      - ./results:/app/results
+    networks:
+      - llm-net
+
+networks:
+  llm-net:
+    external: true

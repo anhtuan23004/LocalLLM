@@ -1,0 +1,31 @@
+services:
+  unsloth:
+    image: unsloth/unsloth:latest
+    container_name: unsloth
+    restart: unless-stopped
+    environment:
+      JUPYTER_PASSWORD: "passd"
+      USER_PASSWORD: "12345678"
+      # JUPYTER_PORT: 8888
+      OLLAMA_HOST: "http://localhost:11434"
+    ports:
+      - "8888:8888"
+      - "8001:8000"
+      - "2222:22"
+    volumes:
+      - ./work:/workspace/work
+      - ../../models:/workspace/models
+      - ../../datasets:/workspace/datasets
+    networks:
+      - llm-net
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: ["gpu"]
+networks:
+  llm-net:
+    external: true

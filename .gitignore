@@ -1,0 +1,23 @@
+# Models
+*.safetensors
+*.bin
+*.pt
+*.ckpt
+models/*/
+!models/download_model.py
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+
+# Environment
+.env
+
+# OS
+.DS_Store
+
+# Results/data
+evaluation/results/*.json
+observation/dashboards/*.png
+observation/dashboards/*.csv

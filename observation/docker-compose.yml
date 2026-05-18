@@ -1,0 +1,14 @@
+services:
+  observation:
+    build: .
+    container_name: observation
+    volumes:
+      - ./scripts:/app/scripts
+      - ./dashboards:/app/dashboards
+      - ../evaluation/results:/app/results
+    networks:
+      - llm-net
+
+networks:
+  llm-net:
+    external: true
