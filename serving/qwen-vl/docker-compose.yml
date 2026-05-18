@@ -20,7 +20,7 @@ services:
       - ${MODEL_LOCAL_PATH}:/models
       # - ./models:/root/.cache/huggingface
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${HOST_PORT}/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:${CONTAINER_PORT}/health"]
       interval: 10s
       timeout: 5s
       retries: 5

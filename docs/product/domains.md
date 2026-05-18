@@ -110,11 +110,6 @@ Download and share model weights across services.
 These gaps need story-backed fixes before the related contracts can be marked
 implemented:
 
-- `training/unsloth/docker-compose.yml` currently sets `OLLAMA_HOST` to
-  `http://localhost:11434`; the cross-container contract expects
-  `http://ollama:11434` on `llm-net`.
-- `serving/qwen-vl/docker-compose.yml` currently checks
-  `http://localhost:${HOST_PORT}/health` from inside the container; the
-  healthcheck should use the container port.
-- `serving/qwen-vl/.env.example` defines `HOST_PORT` and `CONTAINER_PORT`
-  twice; Qwen-VL configuration should have one authoritative value per setting.
+- _(none currently tracked — Cross-S04 resolved the prior compose-contract
+  drift items; see
+  `docs/stories/epics/cross/Cross-S04-compose-contract-drift.md`.)_

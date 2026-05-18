@@ -27,7 +27,7 @@ evidence exist.
 | E04-S01 | Observation produces CSV summary + latency chart | no | no | no | no | planned | none |
 | E05-S01 | download_model.py fetches model to correct path | no | no | no | no | planned | none |
 | Cross-S01 | All services reachable on llm-net | no | no | no | no | planned | none |
-| Cross-S04 | Compose configuration matches product contracts | no | no | no | no | planned | none |
+| Cross-S04 | Compose configuration matches product contracts | n/a | yes | no | no | implemented | docs/stories/epics/cross/Cross-S04-compose-contract-drift.md |
 
 ## Evidence Rules
 
