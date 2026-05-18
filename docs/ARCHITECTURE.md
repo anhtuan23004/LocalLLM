@@ -17,13 +17,13 @@ Host (NVIDIA GPU workstation)
 │
 ├── docker network: llm-net (external, bridge)
 │   ├── ollama          (serving/ollama)       :11434
-│   ├── qwen-vlm        (serving/qwen-vl)     :8000
+│   ├── vllm            (serving/vllm)         :8000
 │   ├── unsloth         (training/unsloth)     :8888, :8001, :2222
 │   ├── evaluation      (evaluation/)          run-once
 │   └── observation     (observation/)         run-once
 │
 ├── Bind mounts:
-│   ├── models/         → serving (qwen-vl), training (unsloth)
+│   ├── models/         → serving (vllm), training (unsloth)
 │   ├── datasets/       → training (unsloth)
 │   ├── evaluation/results/ → evaluation, observation
 │   └── observation/dashboards/ → observation

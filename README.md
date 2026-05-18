@@ -9,7 +9,7 @@ Local LLM infrastructure for serving, training, evaluation, and observation.
 ├── datasets/            Shared training datasets
 ├── serving/             Model serving services
 │   ├── ollama/          Ollama (general LLM serving)
-│   └── qwen-vl/        Qwen-VL via vLLM
+│   └── vllm/            vLLM OpenAI-compatible serving
 ├── training/            Model training/fine-tuning
 │   └── unsloth/         Unsloth fine-tuning environment
 ├── evaluation/          Benchmark and evaluation tools
@@ -39,8 +39,8 @@ python models/download_model.py <model_id> --dir models
 # Ollama
 cd serving/ollama && docker compose up -d
 
-# Qwen-VL (configure .env first)
-cd serving/qwen-vl && docker compose up -d
+# vLLM (configure .env first)
+cd serving/vllm && docker compose up -d
 
 # Unsloth training
 cd training/unsloth && docker compose up -d
