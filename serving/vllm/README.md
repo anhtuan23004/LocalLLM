@@ -1,6 +1,7 @@
-# Qwen3-4B-VL OCR Deployment
+# vLLM Serving
 
-This project provides a Dockerized setup to run **Qwen3-4B-VL** with **vLLM**
+This project provides a Dockerized setup to run an OpenAI-compatible **vLLM**
+server. The default configuration serves **Qwen3-VL-4B-Instruct**.
 
 ---
 
@@ -15,16 +16,18 @@ This project provides a Dockerized setup to run **Qwen3-4B-VL** with **vLLM**
 ## Project Structure
 
 ```
-vllmocrexp/
+serving/vllm/
 ├── docker-compose.yml
-├── models/          # optional, local model storage
+├── .env.example
+└── README.md
 ```
 
 ---
 
 ## Configuration
 
-Create a `.env` file in the `QwenVL` directory to configure your environment. You can copy the example below:
+Create a `.env` file in `serving/vllm` to configure your environment. You can
+copy `.env.example` as a starting point:
 
 ```bash
 # Local path to the models directory
@@ -50,14 +53,14 @@ docker pull vllm/vllm-openai:v0.11.0
 2.  **Build and start the containers**
 
 ```bash
-cd QwenVL
+cd serving/vllm
 # Ensure your .env file is configured
 docker compose up
 # OR run in detached mode
 docker compose up -d
 ```
 
-* `qwen-vlm` container runs the Qwen3-4B-VL model with vLLM
+* `vllm` container runs the configured model with vLLM
 
 3.  **Clean-up**
 

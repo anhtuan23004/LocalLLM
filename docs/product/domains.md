@@ -9,7 +9,7 @@ Expose LLM inference endpoints on the local network.
 | Service | Engine | API | Port | GPU |
 | --- | --- | --- | --- | --- |
 | Ollama | ollama/ollama:latest | Ollama API + OpenAI-compat | 11434 | all |
-| Qwen-VL | vllm/vllm-openai | OpenAI-compatible | 8000 | configurable (device_ids) |
+| vLLM | vllm/vllm-openai | OpenAI-compatible | 8000 | GPU 0 by default |
 
 ### Contracts
 
@@ -21,7 +21,7 @@ Expose LLM inference endpoints on the local network.
 ### Configuration
 
 - Ollama: stateless config, model data in `ollama_data` Docker volume.
-- Qwen-VL: `.env` file controls model path, GPU allocation, memory utilization, tensor parallelism.
+- vLLM: `.env` file controls model path, served model name, GPU allocation, memory utilization, and tensor parallelism.
 
 ---
 

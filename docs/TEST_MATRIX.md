@@ -21,7 +21,7 @@ evidence exist.
 | Story | Contract | Unit | Integration | E2E | Platform | Status | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | E01-S01 | Ollama serves chat completions on llm-net | no | no | no | no | planned | none |
-| E01-S02 | Qwen-VL serves OpenAI-compat API via vLLM | no | no | no | no | planned | none |
+| E01-S02 | vLLM serves configured model through OpenAI-compatible API | no | no | no | no | planned | none |
 | E02-S01 | Unsloth Jupyter accessible with GPU | no | no | no | no | planned | none |
 | E03-S01 | Benchmark produces valid JSON with latency stats | no | no | no | no | planned | none |
 | E04-S01 | Observation produces CSV summary + latency chart | no | no | no | no | planned | none |

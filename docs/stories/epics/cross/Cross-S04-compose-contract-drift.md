@@ -16,9 +16,9 @@ The infrastructure compose files must match the contracts recorded in
 - The Unsloth training container reaches Ollama at `http://ollama:11434` on
   the shared `llm-net` network (Training contract: "Can reach Ollama at
   `http://ollama:11434` via `llm-net`").
-- The Qwen-VL container's healthcheck runs *inside* the container and must
+- The vLLM container's healthcheck runs *inside* the container and must
   target the in-container vLLM port, not the published host port.
-- The Qwen-VL `.env` and `.env.example` contain one authoritative value per
+- The vLLM `.env` and `.env.example` contain one authoritative value per
   configuration setting so that Docker Compose interpolation is deterministic.
 
 ## Relevant Product Docs
@@ -31,9 +31,9 @@ The infrastructure compose files must match the contracts recorded in
 
 - `training/unsloth/docker-compose.yml` sets
   `OLLAMA_HOST: "http://ollama:11434"`.
-- `serving/qwen-vl/docker-compose.yml` healthcheck uses
+- `serving/vllm/docker-compose.yml` healthcheck uses
   `http://localhost:${CONTAINER_PORT}/health` (in-container port).
-- `serving/qwen-vl/.env.example` and `serving/qwen-vl/.env` define
+- `serving/vllm/.env.example` and `serving/vllm/.env` define
   `HOST_PORT` and `CONTAINER_PORT` exactly once each, with non-empty
   authoritative defaults.
 - `docker compose -f <file> config` resolves both compose files without
@@ -44,7 +44,7 @@ The infrastructure compose files must match the contracts recorded in
 ## Design Notes
 
 - Configuration only; no service code or scripts change.
-- Healthcheck runs from inside the qwen-vlm container, where vLLM binds to
+- Healthcheck runs from inside the vLLM container, where vLLM binds to
   `${CONTAINER_PORT}`. The published port (`HOST_PORT`) is host-side and
   not reachable as `localhost` from within the container.
 - `.env` parsing: when a key appears twice, Docker Compose reads the last
@@ -60,9 +60,9 @@ The infrastructure compose files must match the contracts recorded in
 | Layer | Expected proof |
 | --- | --- |
 | Unit | n/a (configuration only) |
-| Integration | `docker compose -f training/unsloth/docker-compose.yml config` and `docker compose -f serving/qwen-vl/docker-compose.yml config` exit 0 with corrected values |
+| Integration | `docker compose -f training/unsloth/docker-compose.yml config` and `docker compose -f serving/vllm/docker-compose.yml config` exit 0 with corrected values |
 | E2E | n/a until Cross-S01 lands (full network reachability) |
-| Platform | Healthcheck exec verifiable once Qwen-VL is running locally (deferred to E01-S02 evidence) |
+| Platform | Healthcheck exec verifiable once vLLM is running locally (deferred to E01-S02 evidence) |
 | Release | n/a |
 
 ## Harness Delta
@@ -80,7 +80,7 @@ applying the fixes:
 $ docker compose -f training/unsloth/docker-compose.yml config | grep -A1 OLLAMA_HOST
       OLLAMA_HOST: http://ollama:11434
 
-$ docker compose -f serving/qwen-vl/docker-compose.yml config | grep -A1 healthcheck
+$ docker compose -f serving/vllm/docker-compose.yml config | grep -A1 healthcheck
     healthcheck:
       test:
       - CMD
@@ -90,4 +90,4 @@ $ docker compose -f serving/qwen-vl/docker-compose.yml config | grep -A1 healthc
 ```
 
 (The recorded `8000` is the resolved `${CONTAINER_PORT}` from
-`serving/qwen-vl/.env`.)
+`serving/vllm/.env`.)

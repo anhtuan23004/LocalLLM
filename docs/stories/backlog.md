@@ -7,7 +7,7 @@ selected, not before.
 
 | Epic | Description | Status |
 | --- | --- | --- |
-| E01-serving | Model serving: Ollama general LLM + vLLM for Qwen-VL vision models | unsliced |
+| E01-serving | Model serving: Ollama general LLM + vLLM OpenAI-compatible inference | unsliced |
 | E02-training | Fine-tuning environment: Unsloth with Jupyter, GPU, shared models/datasets | unsliced |
 | E03-evaluation | Latency benchmarking against serving endpoints via OpenAI-compat API | unsliced |
 | E04-observation | Metrics aggregation and visualization from benchmark results | unsliced |
@@ -18,7 +18,7 @@ selected, not before.
 These are ready to slice into story packets when selected:
 
 - **E01-S01**: Validate Ollama starts, passes healthcheck, responds to chat completion.
-- **E01-S02**: Validate Qwen-VL starts with .env config, passes healthcheck.
+- **E01-S02**: Validate vLLM starts with .env config, serves the configured model, and passes healthcheck.
 - **E02-S01**: Validate Unsloth Jupyter accessible and can import unsloth.
 - **E03-S01**: Run benchmark against Ollama, verify JSON output schema.
 - **E04-S01**: Run observation against existing results, verify CSV + chart output.
@@ -26,4 +26,4 @@ These are ready to slice into story packets when selected:
 - **Cross-S01**: Validate all services reachable on llm-net from evaluation container.
 - **Cross-S02**: Add top-level orchestration docker-compose.yml.
 - **Cross-S03**: Add GPU availability pre-check script.
-- **Cross-S04**: Fix compose-contract drift for Unsloth Ollama reachability and Qwen-VL healthcheck/env configuration. _(implemented — see `docs/stories/epics/cross/Cross-S04-compose-contract-drift.md`)_
+- **Cross-S04**: Fix compose-contract drift for Unsloth Ollama reachability and vLLM healthcheck/env configuration. _(implemented — see `docs/stories/epics/cross/Cross-S04-compose-contract-drift.md`)_
