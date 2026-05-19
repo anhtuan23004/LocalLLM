@@ -20,7 +20,10 @@ monitoring large language models on personal GPU hardware.
 │ Serving  │ Training │ Evaluation  │   Observation   │
 │          │          │             │                 │
 │ Ollama   │ Unsloth  │ Benchmark   │ Metrics + Charts│
-│ vLLM     │ (Jupyter)│ (lm-eval)   │ (matplotlib)    │
+│ vLLM     │ (Jupyter)│ (lm-eval)   │ Prometheus      │
+│ SGLang   │          │             │ Grafana         │
+│ llama.cpp│          │             │                 │
+│ MLX-LM   │          │             │                 │
 ├──────────┴──────────┴─────────────┴─────────────────┤
 │              Shared Resources                        │
 │  models/  datasets/  results/  dashboards/          │
@@ -37,5 +40,7 @@ monitoring large language models on personal GPU hardware.
 
 ## Current State
 
-Working infrastructure exists for all four domains. No orchestration layer,
-no CI, no automated validation pipeline yet.
+Working infrastructure exists for serving, training, evaluation, observation,
+and model management. The repo includes lightweight orchestration through
+`llm-local` and `Makefile`, plus a static smoke guard for compose, registry,
+script, and dashboard artifacts. CI remains out of scope.

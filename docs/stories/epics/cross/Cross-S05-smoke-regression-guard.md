@@ -62,6 +62,8 @@ $ ./scripts/smoke.sh
 === Compose Configs ===
   ✓ serving/ollama
   ✓ serving/vllm
+  ✓ serving/sglang
+  ✓ serving/llama.cpp
   ✓ training/unsloth
   ✓ evaluation
   ✓ observation
@@ -69,5 +71,5 @@ $ ./scripts/smoke.sh
 === Runtime Checks ===
   skipped (run ./scripts/smoke.sh --runtime to check live services)
 
-Results: 15 passed, 0 failed
+Results: 18 passed, 0 failed
 ```

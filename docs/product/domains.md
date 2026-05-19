@@ -119,8 +119,8 @@ Download, inventory, and convert model weights across services.
 | `models/download_model.py` | Python 3 | huggingface_hub, ruamel.yaml |
 | `models/registry.yaml` | YAML | — |
 | `models/assemble_registry.py` | Python 3 | ruamel.yaml |
-| `models/convert.sh` | Bash | llama.cpp, ollama CLI |
-| `models/validate_registry.sh` | Bash | yq |
+| `models/convert.sh` | Bash | git, llama.cpp, optional `convert` Python extra, ollama CLI |
+| `models/validate_registry.py` | Python 3 | ruamel.yaml |
 
 ### Contracts
 
@@ -131,9 +131,9 @@ Download, inventory, and convert model weights across services.
 - Writes `models/<name>/model.yaml` sidecars and refreshes `registry.yaml` after successful downloads.
 - `registry.yaml` tracks all models: id, repo, format, size_gb, path, serving_target, serving_targets, quantizations, downloaded.
 - Default serving targets are inferred by format: safetensors/PyTorch targets vLLM and SGLang; GGUF targets llama.cpp and Ollama; MLX can be set explicitly with `--target mlx`.
-- `convert.sh hf2gguf <path>` converts HuggingFace weights to GGUF via llama.cpp `convert_hf_to_gguf.py`.
+- `convert.sh hf2gguf <path>` converts HuggingFace weights to GGUF via llama.cpp `convert_hf_to_gguf.py`; llama.cpp is shallow-cloned into `vendor/llama.cpp` on first use.
 - `convert.sh gguf2ollama <path>` imports GGUF into Ollama via `ollama create` with generated Modelfile.
-- `validate_registry.sh` checks all registry entries have valid paths and expected files.
+- `validate_registry.py` checks all registry entries have valid paths and expected files.
 - Models directory bind-mounted into serving and training containers.
 
 ---

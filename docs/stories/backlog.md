@@ -20,6 +20,7 @@ These are ready to slice into story packets when selected:
 
 - **E01-S01**: Validate Ollama starts, passes healthcheck, responds to chat completion. _(implemented — see `docs/stories/epics/serving/E01-S01-ollama-chat-completions.md`)_
 - **E01-S02**: Validate vLLM starts with .env config, serves the configured model, and passes healthcheck.
+- **E01-S03**: Add setup for SGLang, llama.cpp, MLX-LM, and non-conflicting host ports. _(implemented — see `docs/stories/epics/serving/E01-S03-serving-runtime-setup.md`)_
 - **E02-S01**: Validate Unsloth Jupyter accessible and can import unsloth. _(implemented — see `docs/stories/epics/training/E02-S01-unsloth-jupyter-gpu.md`)_
 - **E03-S01**: Run benchmark against Ollama, verify JSON output schema. _(implemented — see `docs/stories/epics/evaluation/E03-S01-benchmark-produces-valid-json.md`)_
 - **E03-S02**: Run lm-eval-harness smoke quality eval against vLLM/OpenAI-compatible endpoint.

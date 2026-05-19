@@ -2,8 +2,8 @@
 
 ## Discovery Answers (LLM-Local)
 
-- **Product surfaces**: CLI (docker compose commands), REST APIs (Ollama, vLLM OpenAI-compat), Jupyter Lab (training).
-- **Runtime stack**: Docker Compose, Python 3.11, NVIDIA CUDA GPU, vLLM, Ollama, Unsloth.
+- **Product surfaces**: CLI (`llm-local`, Makefile), REST APIs (Ollama, vLLM, SGLang, llama.cpp, MLX-LM OpenAI-compat), Jupyter Lab (training), Grafana/Prometheus (observation).
+- **Runtime stack**: Docker Compose, Python 3.11, NVIDIA CUDA GPU, vLLM, SGLang, llama.cpp, Ollama, Unsloth, Prometheus, Grafana, and host-side MLX-LM on Apple Silicon.
 - **Core domains**: Serving, Training, Evaluation, Observation, Model Management.
 - **Boundary inputs**: CLI arguments (benchmark params, model download args), environment variables (.env files), HTTP API requests (OpenAI-compat), filesystem (model weights, benchmark JSON, CSV/PNG output).
 - **Validation ladder**: Docker healthchecks → benchmark JSON schema → metrics CSV + chart generation → cross-service network reachability.

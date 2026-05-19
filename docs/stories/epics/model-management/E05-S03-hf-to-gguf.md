@@ -20,7 +20,8 @@ weights to GGUF format using llama.cpp's `convert_hf_to_gguf.py`. Supports
 
 ## Acceptance Criteria
 
-- `convert.sh hf2gguf` validates llama.cpp directory exists before running.
+- `convert.sh hf2gguf` shallow-clones llama.cpp into `vendor/llama.cpp` on first use.
+- Checks Python conversion dependencies (`gguf`, `torch`) before cloning or running conversion.
 - Calls `convert_hf_to_gguf.py` with correct `--outtype` and `--outfile`.
 - Output GGUF placed inside the model directory as `<name>-<type>.gguf`.
 - `LLAMA_CPP_DIR` env var overrides default llama.cpp path.
@@ -30,14 +31,16 @@ weights to GGUF format using llama.cpp's `convert_hf_to_gguf.py`. Supports
 
 | Layer | Expected proof |
 | --- | --- |
-| Unit | `convert.sh hf2gguf /nonexistent` exits 1 with error about missing llama.cpp |
-| Integration | With llama.cpp cloned, converts a small model to GGUF |
+| Unit | `bash -n models/convert.sh`; missing Python conversion deps produce clear install instructions |
+| Integration | With `uv sync --extra convert`, llama.cpp is shallow-cloned and a small model converts to GGUF |
 
 ## Evidence
 
 ```bash
-$ ./models/convert.sh hf2gguf /tmp/fake
-ERROR: .../llama.cpp/convert_hf_to_gguf.py not found.
-Clone llama.cpp: git clone https://github.com/ggerganov/llama.cpp.git
-Or set LLAMA_CPP_DIR to its location.
+$ bash -n models/convert.sh
+# exits 0
+
+$ LLAMA_CPP_DIR=/tmp/vendor/llama.cpp ./models/convert.sh hf2gguf /tmp/fake
+ERROR: missing Python conversion dependencies: torch
+Install them with: uv sync --extra convert
 ```
