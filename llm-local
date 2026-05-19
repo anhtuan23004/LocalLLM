@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+# llm-local — Unified CLI for LLM-Local infrastructure.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+PYTHON="$ROOT/.venv/bin/python"
+
+usage() {
+  cat <<EOF
+Usage: ./llm-local <command> [args...]
+
+Commands:
+  model download <repo-id> [--target TARGET] Download model from HuggingFace
+  model convert <hf2gguf|gguf2ollama> <path>  Convert model format
+  model list                                  List registered models
+  model select <id> [--restart]               Select vLLM model (+ optional restart)
+  model rm <model-id> [--force]               Remove model and update registry
+  model validate                              Validate registry paths
+  eval run [--target ollama|vllm] [--model NAME] [--num-requests N] [--prompt TEXT]
+  eval quality                                Run lm-eval harness
+  serve <ollama|vllm|sglang|llama.cpp|mlx> [up|down]  Manage serving
+  train [up|down]                            Manage training
+  observe [up|down|batch]                    Manage observability
+  smoke [--runtime]                           Run regression smoke test
+  help                                       Show this help
+EOF
+}
+
+eval_run() {
+  local target="ollama"
+  local model=""
+  local num_requests=""
+  local prompt=""
+
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --target)
+        target="${2:-}"
+        [ -n "$target" ] || { echo "ERROR: --target requires a value"; exit 1; }
+        shift 2
+        ;;
+      --model)
+        model="${2:-}"
+        [ -n "$model" ] || { echo "ERROR: --model requires a value"; exit 1; }
+        shift 2
+        ;;
+      --num-requests)
+        num_requests="${2:-}"
+        [ -n "$num_requests" ] || { echo "ERROR: --num-requests requires a value"; exit 1; }
+        shift 2
+        ;;
+      --prompt)
+        prompt="${2:-}"
+        [ -n "$prompt" ] || { echo "ERROR: --prompt requires a value"; exit 1; }
+        shift 2
+        ;;
+      *)
+        echo "Unknown eval run option: $1"
+        usage
+        exit 1
+        ;;
+    esac
+  done
+
+  local endpoint
+  case "$target" in
+    ollama) endpoint="http://ollama:11434" ;;
+    vllm)   endpoint="http://vllm:8000" ;;
+    *) echo "ERROR: --target must be ollama or vllm"; exit 1 ;;
+  esac
+
+  local run_args=(--endpoint "$endpoint")
+  [ -n "$model" ] && run_args+=(--model-name "$model")
+  [ -n "$num_requests" ] && run_args+=(--num-requests "$num_requests")
+  [ -n "$prompt" ] && run_args+=(--prompt "$prompt")
+
+  cd "$ROOT/evaluation" && docker compose run --rm evaluation "${run_args[@]}"
+}
+
+case "${1:-}" in
+  model)
+    case "${2:-}" in
+      download) shift 2; "$PYTHON" "$ROOT/models/download_model.py" "$@" ;;
+      convert)  shift 2; "$ROOT/models/convert.sh" "$@" ;;
+      list)     "$PYTHON" "$ROOT/models/manage.py" list ;;
+      select)   shift 2; "$PYTHON" "$ROOT/models/manage.py" select "$@" ;;
+      rm)       shift 2; "$PYTHON" "$ROOT/models/manage.py" rm "$@" ;;
+      validate) "$PYTHON" "$ROOT/models/validate_registry.py" ;;
+      *) usage; exit 1 ;;
+    esac ;;
+  eval)
+    case "${2:-}" in
+      run)     shift 2; eval_run "$@" ;;
+      quality) cd "$ROOT/evaluation" && docker compose --profile quality run --rm lm-eval ;;
+      *) usage; exit 1 ;;
+    esac ;;
+  serve)
+    svc="${2:-ollama}"; action="${3:-up}"
+    case "$svc" in
+      ollama|vllm|sglang|llama.cpp) ;;
+      mlx)
+        case "$action" in
+          up) "$ROOT/serving/mlx/serve.sh" ;;
+          down) echo "MLX server runs in the foreground; stop its terminal process." ;;
+          *) echo "ERROR: serve action must be up or down"; exit 1 ;;
+        esac
+        exit 0
+        ;;
+      *) echo "ERROR: service must be ollama, vllm, sglang, llama.cpp, or mlx"; exit 1 ;;
+    esac
+    case "$action" in
+      up)   docker network create llm-net 2>/dev/null || true
+            cd "$ROOT/serving/$svc" && docker compose up -d ;;
+      down) cd "$ROOT/serving/$svc" && docker compose down ;;
+      *) echo "ERROR: serve action must be up or down"; exit 1 ;;
+    esac ;;
+  train)
+    action="${2:-up}"
+    case "$action" in
+      up)   docker network create llm-net 2>/dev/null || true
+            cd "$ROOT/training/unsloth" && docker compose up -d ;;
+      down) cd "$ROOT/training/unsloth" && docker compose down ;;
+      *) echo "ERROR: train action must be up or down"; exit 1 ;;
+    esac ;;
+  observe)
+    case "${2:-up}" in
+      up)    docker network create llm-net 2>/dev/null || true
+             cd "$ROOT/observation" && docker compose up -d ;;
+      down)  cd "$ROOT/observation" && docker compose down ;;
+      batch) cd "$ROOT/observation" && docker compose --profile batch run --rm observation ;;
+      *) usage; exit 1 ;;
+    esac ;;
+  smoke) shift; "$ROOT/scripts/smoke.sh" "$@" ;;
+  help|--help|-h|"") usage ;;
+  *) echo "Unknown command: $1"; usage; exit 1 ;;
+esac
