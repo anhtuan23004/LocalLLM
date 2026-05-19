@@ -8,7 +8,7 @@
 
 MODEL ?= llama3
 N ?= 10
-PROMPT ?= "Explain briefly what a neural network is."
+PROMPT ?= Explain briefly what a neural network is.
 
 # --- Serving ---
 

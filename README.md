@@ -64,10 +64,10 @@ targets explicitly.
 
 ```bash
 # List available vllm-targeted models
-python serving/vllm/select_model.py
+./llm-local model list
 
 # Switch the active model
-python serving/vllm/select_model.py GLM-OCR
+./llm-local model select GLM-OCR
 ```
 
 This updates `serving/vllm/.env` with the correct model path and name.
