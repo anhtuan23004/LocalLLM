@@ -15,7 +15,7 @@ services:
       - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
       - HF_TOKEN=${HF_TOKEN:-}
     ports:
-      - "${HOST_PORT:-30000}:${CONTAINER_PORT:-30000}"
+      - "${HOST_PORT:-18030}:${CONTAINER_PORT:-30000}"
     volumes:
       - ${MODEL_LOCAL_PATH:-../../models}:/models
       - ${HF_CACHE_PATH:-~/.cache/huggingface}:/root/.cache/huggingface

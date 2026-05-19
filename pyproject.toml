@@ -8,6 +8,12 @@ dependencies = [
     "ruamel-yaml>=0.18.0",
 ]
 
+[project.optional-dependencies]
+convert = [
+    "gguf>=0.6.0",
+    "torch",
+]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

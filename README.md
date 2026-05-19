@@ -50,6 +50,16 @@ python models/assemble_registry.py
 
 This builds `models/registry.yaml` from all sidecar files.
 
+Default host ports avoid common service defaults:
+
+| Service | Host port | Container/runtime port |
+| --- | ---: | ---: |
+| Ollama | `18134` | `11434` |
+| vLLM | `18000` | `8000` |
+| SGLang | `18030` | `30000` |
+| llama.cpp | `18080` | `8080` |
+| MLX-LM | `18081` | `18081` |
+
 Default serving targets are inferred from the downloaded format:
 
 | Format | Default targets |

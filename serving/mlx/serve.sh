@@ -13,7 +13,7 @@ fi
 
 MLX_MODEL="${MLX_MODEL:-mlx-community/Mistral-7B-Instruct-v0.3-4bit}"
 MLX_HOST="${MLX_HOST:-0.0.0.0}"
-MLX_PORT="${MLX_PORT:-8081}"
+MLX_PORT="${MLX_PORT:-18081}"
 MLX_EXTRA_ARGS="${MLX_EXTRA_ARGS:-}"
 
 if ! command -v mlx_lm.server >/dev/null 2>&1; then
@@ -26,4 +26,3 @@ exec mlx_lm.server \
   --host "$MLX_HOST" \
   --port "$MLX_PORT" \
   $MLX_EXTRA_ARGS
-

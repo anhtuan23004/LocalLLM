@@ -59,12 +59,12 @@ check "observation" docker compose -f observation/docker-compose.yml config
 echo "=== Model Registry ==="
 check "registry.yaml exists" test -f models/registry.yaml
 check "convert.sh executable" test -x models/convert.sh
-check "validate_registry.sh executable" test -x models/validate_registry.sh
-check "registry validates" ./models/validate_registry.sh
+check "validate_registry.py exists" test -f models/validate_registry.py
+check "registry validates" ./llm-local model validate
 
 echo "=== Scripts ==="
 check "convert.sh syntax" bash -n models/convert.sh
-check "validate_registry.sh syntax" bash -n models/validate_registry.sh
+check "validate_registry.py syntax" uv run python -m py_compile models/validate_registry.py
 check "run_lm_eval.sh syntax" sh -n evaluation/scripts/run_lm_eval.sh
 check "mlx serve.sh syntax" bash -n serving/mlx/serve.sh
 check "smoke.sh syntax" bash -n scripts/smoke.sh
@@ -84,8 +84,8 @@ if [ "$RUNTIME" -eq 1 ]; then
   check "vLLM healthy" sh -c 'docker inspect --format="{{.State.Health.Status}}" vllm 2>/dev/null | grep -q healthy'
 
   echo "=== Inference ==="
-  check "Ollama responds" curl -sf http://localhost:11434/api/tags
-  check "vLLM responds" curl -sf http://localhost:8000/health
+  check "Ollama responds" curl -sf "http://localhost:${OLLAMA_HOST_PORT:-18134}/api/tags"
+  check "vLLM responds" curl -sf "http://localhost:${VLLM_HOST_PORT:-18000}/health"
 
   echo "=== Observability ==="
   check "Prometheus up" curl -sf "http://localhost:${PROMETHEUS_HOST_PORT:-9090}/-/healthy"

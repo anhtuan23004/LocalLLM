@@ -16,10 +16,10 @@ Stack choices recorded in `docs/decisions/0004-docker-compose-shared-network.md`
 Host (NVIDIA GPU workstation)
 │
 ├── docker network: llm-net (external, bridge)
-│   ├── ollama          (serving/ollama)       :11434
-│   ├── vllm            (serving/vllm)         :8000
-│   ├── sglang          (serving/sglang)       :30000
-│   ├── llama-cpp       (serving/llama.cpp)    :8080
+│   ├── ollama          (serving/ollama)       host :18134 → container :11434
+│   ├── vllm            (serving/vllm)         host :18000 → container :8000
+│   ├── sglang          (serving/sglang)       host :18030 → container :30000
+│   ├── llama-cpp       (serving/llama.cpp)    host :18080 → container :8080
 │   ├── unsloth         (training/unsloth)     :8888, :8001, :2222
 │   ├── evaluation      (evaluation/)          run-once
 │   ├── observation     (observation/)         run-once (batch profile)
@@ -37,7 +37,7 @@ Host (NVIDIA GPU workstation)
     └── ollama_data     → ollama (/root/.ollama)
 
 Host-only Apple Silicon path:
-└── mlx_lm.server       (serving/mlx)          :8081
+└── mlx_lm.server       (serving/mlx)          :18081
 ```
 
 ## Default Layering (adapted)

@@ -6,13 +6,13 @@ Expose LLM inference endpoints on the local network.
 
 ### Services
 
-| Service | Engine | API | Port | GPU |
-| --- | --- | --- | --- | --- |
-| Ollama | ollama/ollama:latest | Ollama API + OpenAI-compat | 11434 | all |
-| vLLM | vllm/vllm-openai | OpenAI-compatible | 8000 | GPU 0 by default |
-| SGLang | lmsysorg/sglang | OpenAI-compatible | 30000 | GPU 0 by default |
-| llama.cpp | ghcr.io/ggml-org/llama.cpp | OpenAI-compatible | 8080 | GPU 0 by default |
-| MLX-LM | mlx-lm host process | OpenAI-compatible | 8081 | Apple Silicon Metal |
+| Service | Engine | API | Host port | Runtime port | GPU |
+| --- | --- | --- | ---: | ---: | --- |
+| Ollama | ollama/ollama:latest | Ollama API + OpenAI-compat | 18134 | 11434 | all |
+| vLLM | vllm/vllm-openai | OpenAI-compatible | 18000 | 8000 | GPU 0 by default |
+| SGLang | lmsysorg/sglang | OpenAI-compatible | 18030 | 30000 | GPU 0 by default |
+| llama.cpp | ghcr.io/ggml-org/llama.cpp | OpenAI-compatible | 18080 | 8080 | GPU 0 by default |
+| MLX-LM | mlx-lm host process | OpenAI-compatible | 18081 | 18081 | Apple Silicon Metal |
 
 ### Contracts
 
@@ -31,6 +31,7 @@ Expose LLM inference endpoints on the local network.
 - SGLang: `.env` file controls model path, host/container ports, tensor parallelism, memory fraction, and GPU allocation.
 - llama.cpp: `.env` file controls GGUF model path, host/container ports, context size, parallel slots, and GPU layer offload.
 - MLX-LM: `.env` file controls host model id/path and port; it runs outside Docker on Apple Silicon.
+- Host ports use the `18xxx` range by default to avoid common local service conflicts while keeping runtime/container ports unchanged.
 
 ---
 

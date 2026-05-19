@@ -13,14 +13,15 @@ Commands:
   model download <repo-id> [--target TARGET] Download model from HuggingFace
   model convert <hf2gguf|gguf2ollama> <path>  Convert model format
   model list                                  List registered models
-  model select <id> [--restart]               Select vLLM model (+ optional restart)
+  model select <id> [--runtime RT] [--restart]   Select model for runtime (default: vllm)
   model rm <model-id> [--force]               Remove model and update registry
   model validate                              Validate registry paths
-  eval run [--target ollama|vllm] [--model NAME] [--num-requests N] [--prompt TEXT]
+  eval run [--target ollama|vllm|sglang|llama.cpp|mlx] [--model NAME] [--num-requests N] [--prompt TEXT]
   eval quality                                Run lm-eval harness
   serve <ollama|vllm|sglang|llama.cpp|mlx> [up|down]  Manage serving
   train [up|down]                            Manage training
   observe [up|down|batch]                    Manage observability
+  status                                     Show service and model status
   smoke [--runtime]                           Run regression smoke test
   help                                       Show this help
 EOF
@@ -64,9 +65,12 @@ eval_run() {
 
   local endpoint
   case "$target" in
-    ollama) endpoint="http://ollama:11434" ;;
-    vllm)   endpoint="http://vllm:8000" ;;
-    *) echo "ERROR: --target must be ollama or vllm"; exit 1 ;;
+    ollama)   endpoint="http://ollama:11434" ;;
+    vllm)     endpoint="http://vllm:8000" ;;
+    sglang)   endpoint="http://sglang:30000" ;;
+    llama.cpp) endpoint="http://llama-cpp:8080" ;;
+    mlx)      endpoint="http://host.docker.internal:8081" ;;
+    *) echo "ERROR: --target must be ollama, vllm, sglang, llama.cpp, or mlx"; exit 1 ;;
   esac
 
   local run_args=(--endpoint "$endpoint")
@@ -130,6 +134,16 @@ case "${1:-}" in
       batch) cd "$ROOT/observation" && docker compose --profile batch run --rm observation ;;
       *) usage; exit 1 ;;
     esac ;;
+  status)
+    echo "=== Services ==="
+    for svc in ollama vllm sglang llama-cpp; do
+      state=$(docker inspect --format='{{.State.Health.Status}}' "$svc" 2>/dev/null || echo "not running")
+      printf "  %-12s %s\n" "$svc" "$state"
+    done
+    echo ""
+    echo "=== Models ==="
+    "$PYTHON" "$ROOT/models/manage.py" list
+    ;;
   smoke) shift; "$ROOT/scripts/smoke.sh" "$@" ;;
   help|--help|-h|"") usage ;;
   *) echo "Unknown command: $1"; usage; exit 1 ;;
