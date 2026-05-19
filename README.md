@@ -31,7 +31,46 @@ docker network create llm-net
 ```bash
 python models/download_model.py <model_id> --dir models
 # Example: python models/download_model.py Qwen/Qwen3-VL-4B-Instruct --dir models
+# Override or add serving targets: --target vllm --target sglang
 ```
+
+Downloads the model, writes a `models/<name>/model.yaml` sidecar with
+auto-detected format, size, status, and serving targets, then refreshes
+`models/registry.yaml`.
+
+### Model Registry
+
+Each downloaded model has a `model.yaml` sidecar. The download command refreshes
+the full registry automatically. If you edit sidecars by hand, rebuild the
+registry with:
+
+```bash
+python models/assemble_registry.py
+```
+
+This builds `models/registry.yaml` from all sidecar files.
+
+Default serving targets are inferred from the downloaded format:
+
+| Format | Default targets |
+| --- | --- |
+| `safetensors` / `pytorch` | `vllm`, `sglang` |
+| `gguf` | `llama.cpp`, `ollama` |
+
+Use `--target mlx` for MLX-converted models or repeat `--target` to set multiple
+targets explicitly.
+
+### Select vLLM Model
+
+```bash
+# List available vllm-targeted models
+python serving/vllm/select_model.py
+
+# Switch the active model
+python serving/vllm/select_model.py GLM-OCR
+```
+
+This updates `serving/vllm/.env` with the correct model path and name.
 
 ### Start Services
 
@@ -41,6 +80,15 @@ cd serving/ollama && docker compose up -d
 
 # vLLM (configure .env first)
 cd serving/vllm && docker compose up -d
+
+# SGLang (configure .env first)
+cd serving/sglang && docker compose up -d
+
+# llama.cpp (configure .env first, requires GGUF)
+cd serving/llama.cpp && docker compose up -d
+
+# MLX-LM on Apple Silicon (configure .env first)
+serving/mlx/serve.sh
 
 # Unsloth training
 cd training/unsloth && docker compose up -d
@@ -55,10 +103,40 @@ cd evaluation && docker compose run --rm evaluation \
   --num-requests 20
 ```
 
-### View Observation
+Quality evaluation through lm-eval-harness:
 
 ```bash
-cd observation && docker compose run --rm observation
+cd evaluation && docker compose --profile quality run --rm lm-eval
+```
+
+### Observation
+
+Real-time monitoring (Prometheus + Grafana):
+
+```bash
+cd observation && docker compose up -d
+```
+
+- Grafana: http://localhost:3000 (admin/admin, anonymous viewing enabled)
+- Prometheus: http://localhost:9090
+- Configure defaults in `observation/.env`; tracked defaults live in `observation/.env.example`.
+
+If those ports are already in use, override them:
+
+```bash
+cd observation && GRAFANA_HOST_PORT=13000 PROMETHEUS_HOST_PORT=19090 docker compose up -d
+```
+
+GPU metrics are optional and require a Linux host with NVIDIA device paths:
+
+```bash
+cd observation && docker compose --profile gpu up -d
+```
+
+Batch benchmark reports (existing):
+
+```bash
+cd observation && docker compose --profile batch run --rm observation
 ```
 
 Results are saved to `evaluation/results/` and visualizations to `observation/dashboards/`.

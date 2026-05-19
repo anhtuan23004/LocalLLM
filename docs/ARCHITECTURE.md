@@ -18,18 +18,26 @@ Host (NVIDIA GPU workstation)
 ├── docker network: llm-net (external, bridge)
 │   ├── ollama          (serving/ollama)       :11434
 │   ├── vllm            (serving/vllm)         :8000
+│   ├── sglang          (serving/sglang)       :30000
+│   ├── llama-cpp       (serving/llama.cpp)    :8080
 │   ├── unsloth         (training/unsloth)     :8888, :8001, :2222
 │   ├── evaluation      (evaluation/)          run-once
-│   └── observation     (observation/)         run-once
+│   ├── observation     (observation/)         run-once (batch profile)
+│   ├── prometheus      (observation/)         :9090
+│   ├── grafana         (observation/)         :3000
+│   └── nvidia-gpu-exporter (observation/)     :9835
 │
 ├── Bind mounts:
-│   ├── models/         → serving (vllm), training (unsloth)
+│   ├── models/         → serving (vllm, sglang, llama.cpp), training (unsloth)
 │   ├── datasets/       → training (unsloth)
 │   ├── evaluation/results/ → evaluation, observation
 │   └── observation/dashboards/ → observation
 │
 └── Docker volumes:
     └── ollama_data     → ollama (/root/.ollama)
+
+Host-only Apple Silicon path:
+└── mlx_lm.server       (serving/mlx)          :8081
 ```
 
 ## Default Layering (adapted)
@@ -62,10 +70,15 @@ Configuration (.env, docker-compose.yml)
 
 ## Observability Contract (adapted)
 
-Current observability is batch-oriented:
+**Real-time** (always-on core, optional GPU profile):
+
+- Prometheus scrapes vLLM `/metrics` and, when `--profile gpu` is enabled,
+  nvidia-gpu-exporter every 15s.
+- Grafana dashboard: GPU utilization, VRAM, temperature, vLLM p95 latency, tokens/s, queue depth.
+- Ports: Grafana :3000, Prometheus :9090.
+
+**Batch** (on-demand via `--profile batch`):
 
 - Benchmark JSON per run (timestamp, latency stats, per-request details).
 - Aggregated CSV summary across runs.
 - Latency-over-time chart (PNG).
-
-Future consideration: real-time metrics via Prometheus + Grafana.

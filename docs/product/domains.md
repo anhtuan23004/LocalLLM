@@ -10,18 +10,27 @@ Expose LLM inference endpoints on the local network.
 | --- | --- | --- | --- | --- |
 | Ollama | ollama/ollama:latest | Ollama API + OpenAI-compat | 11434 | all |
 | vLLM | vllm/vllm-openai | OpenAI-compatible | 8000 | GPU 0 by default |
+| SGLang | lmsysorg/sglang | OpenAI-compatible | 30000 | GPU 0 by default |
+| llama.cpp | ghcr.io/ggml-org/llama.cpp | OpenAI-compatible | 8080 | GPU 0 by default |
+| MLX-LM | mlx-lm host process | OpenAI-compatible | 8081 | Apple Silicon Metal |
 
 ### Contracts
 
 - Ollama exposes `/api/generate`, `/api/chat`, and OpenAI-compatible `/v1/chat/completions`.
 - vLLM exposes `/v1/chat/completions` and `/health`.
-- Both join `llm-net` and are reachable by container name from other services.
-- Healthchecks defined: Ollama via `ollama list`, vLLM via curl `/health`.
+- SGLang exposes `/v1/chat/completions`, `/v1/completions`, `/v1/embeddings`, `/health`, and `/metrics`.
+- llama.cpp exposes OpenAI-compatible `/v1/chat/completions` and `/v1/embeddings` for GGUF models.
+- MLX-LM exposes OpenAI-compatible chat completions from a host Apple Silicon process.
+- Docker services join `llm-net` and are reachable by container name from other services.
+- Healthchecks defined: Ollama via `ollama list`, vLLM via curl `/health`, SGLang via curl `/health`.
 
 ### Configuration
 
 - Ollama: stateless config, model data in `ollama_data` Docker volume.
 - vLLM: `.env` file controls model path, served model name, GPU allocation, memory utilization, and tensor parallelism.
+- SGLang: `.env` file controls model path, host/container ports, tensor parallelism, memory fraction, and GPU allocation.
+- llama.cpp: `.env` file controls GGUF model path, host/container ports, context size, parallel slots, and GPU layer offload.
+- MLX-LM: `.env` file controls host model id/path and port; it runs outside Docker on Apple Silicon.
 
 ---
 
@@ -48,19 +57,23 @@ Fine-tune models using GPU-accelerated Jupyter environment.
 
 ## Evaluation
 
-Benchmark model serving endpoints for latency and correctness.
+Benchmark model serving endpoints for latency and quality.
 
 ### Services
 
 | Service | Base | Tools | Output |
 | --- | --- | --- | --- |
 | evaluation | python:3.11-slim | requests, pandas, lm-eval | evaluation/results/*.json |
+| lm-eval | python:3.11-slim | lm-eval-harness OpenAI-compatible API backend | evaluation/results/lm-eval/ |
 
 ### Contracts
 
 - Runs `run_benchmark.py` as entrypoint with CLI args: `--endpoint`, `--model-name`, `--num-requests`, `--prompt`.
 - Sends N chat completion requests, records per-request latency.
 - Outputs JSON with summary stats (avg/min/max latency, success count).
+- Runs `lm_eval` through `run_lm_eval.sh` for quality evaluation against OpenAI-compatible serving endpoints.
+- Uses `local-chat-completions` by default with `--apply_chat_template`, `--batch_size 1`, and env-configured model/task/endpoint values.
+- Defaults to a small smoke run (`LM_EVAL_TASKS=gsm8k`, `LM_EVAL_LIMIT=10`) so local validation is bounded on a 12GB VRAM target.
 - Results saved to `evaluation/results/` (bind-mounted).
 - Reaches serving endpoints via `llm-net` by container name.
 
@@ -68,16 +81,25 @@ Benchmark model serving endpoints for latency and correctness.
 
 ## Observation
 
-Aggregate benchmark results into reports and visualizations.
+Aggregate benchmark results into reports and visualizations, and expose
+real-time runtime dashboards for inference and GPU metrics.
 
 ### Services
 
 | Service | Base | Tools | Output |
 | --- | --- | --- | --- |
 | observation | python:3.11-slim | requests, pandas, matplotlib | observation/dashboards/ |
+| prometheus | prom/prometheus | Prometheus | metrics store + scrape targets |
+| grafana | grafana/grafana | Grafana | provisioned datasource + dashboard |
+| nvidia-gpu-exporter | utkuozdemir/nvidia_gpu_exporter | nvidia-smi exporter | GPU metrics on profile `gpu` |
 
 ### Contracts
 
+- Prometheus scrapes vLLM `/metrics` at `vllm:8000` and the optional GPU exporter at `nvidia-gpu-exporter:9835`.
+- Grafana provisions the Prometheus datasource with UID `prometheus`.
+- Grafana loads `llm-local-overview.json` with panels for GPU utilization, VRAM, temperature, vLLM latency, token throughput, and request queue depth.
+- Host ports default to Grafana `3000`, Prometheus `9090`, and GPU exporter `9835`, with `GRAFANA_HOST_PORT`, `PROMETHEUS_HOST_PORT`, and `GPU_EXPORTER_HOST_PORT` overrides.
+- GPU exporter is opt-in via `docker compose --profile gpu up -d` because it depends on Linux NVIDIA device/library paths.
 - Runs `collect_metrics.py` as entrypoint.
 - Reads all `benchmark_*.json` files from `evaluation/results/` (bind-mounted).
 - Produces `metrics_summary.csv` and `latency_chart.png` in `observation/dashboards/`.
@@ -87,13 +109,17 @@ Aggregate benchmark results into reports and visualizations.
 
 ## Model Management
 
-Download and share model weights across services.
+Download, inventory, and convert model weights across services.
 
 ### Tools
 
 | Tool | Language | Dependencies |
 | --- | --- | --- |
-| `models/download_model.py` | Python 3 | huggingface_hub |
+| `models/download_model.py` | Python 3 | huggingface_hub, ruamel.yaml |
+| `models/registry.yaml` | YAML | — |
+| `models/assemble_registry.py` | Python 3 | ruamel.yaml |
+| `models/convert.sh` | Bash | llama.cpp, ollama CLI |
+| `models/validate_registry.sh` | Bash | yq |
 
 ### Contracts
 
@@ -101,6 +127,12 @@ Download and share model weights across services.
 - Auto-creates subdirectory named after model (e.g., `models/Qwen3-VL-4B-Instruct/`).
 - Excludes `.msgpack`, `.h5`, `.ot` files.
 - Supports `--token` for gated models.
+- Writes `models/<name>/model.yaml` sidecars and refreshes `registry.yaml` after successful downloads.
+- `registry.yaml` tracks all models: id, repo, format, size_gb, path, serving_target, serving_targets, quantizations, downloaded.
+- Default serving targets are inferred by format: safetensors/PyTorch targets vLLM and SGLang; GGUF targets llama.cpp and Ollama; MLX can be set explicitly with `--target mlx`.
+- `convert.sh hf2gguf <path>` converts HuggingFace weights to GGUF via llama.cpp `convert_hf_to_gguf.py`.
+- `convert.sh gguf2ollama <path>` imports GGUF into Ollama via `ollama create` with generated Modelfile.
+- `validate_registry.sh` checks all registry entries have valid paths and expected files.
 - Models directory bind-mounted into serving and training containers.
 
 ---
