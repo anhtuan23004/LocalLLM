@@ -1,0 +1,44 @@
+services:
+  sglang:
+    image: lmsysorg/sglang:${SGLANG_IMAGE_TAG:-latest}
+    container_name: sglang
+    entrypoint: python3 -m sglang.launch_server
+    command: >
+      --model-path ${SGLANG_MODEL_PATH:-/models/GLM-OCR}
+      --host 0.0.0.0
+      --port ${CONTAINER_PORT:-30000}
+      --tp-size ${SGLANG_TP_SIZE:-1}
+      --mem-fraction-static ${SGLANG_MEM_FRACTION_STATIC:-0.8}
+      --enable-metrics
+      ${SGLANG_EXTRA_ARGS:-}
+    environment:
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
+      - HF_TOKEN=${HF_TOKEN:-}
+    ports:
+      - "${HOST_PORT:-30000}:${CONTAINER_PORT:-30000}"
+    volumes:
+      - ${MODEL_LOCAL_PATH:-../../models}:/models
+      - ${HF_CACHE_PATH:-~/.cache/huggingface}:/root/.cache/huggingface
+    ipc: host
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:${CONTAINER_PORT:-30000}/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['0']
+              capabilities: [gpu]
+    networks:
+      - llm-net
+
+networks:
+  llm-net:
+    external: true

@@ -47,8 +47,13 @@ CUDA_VISIBLE_DEVICES=0
 1.  **Pull the Docker image**
 
 ```bash
-docker pull vllm/vllm-openai:v0.11.0
+docker pull vllm/vllm-openai:v0.6.6.post1
 ```
+
+The tag is pinned instead of `latest` so Docker does not pull a CUDA runtime
+newer than the host NVIDIA driver supports. If you need newer model
+architectures, first confirm the host driver CUDA support with `nvidia-smi`,
+then raise `VLLM_IMAGE_TAG` deliberately.
 
 2.  **Build and start the containers**
 

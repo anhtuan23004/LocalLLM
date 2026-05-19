@@ -1,0 +1,12 @@
+id: GLM-OCR
+repo: THUDM/GLM-OCR-2B-1.1
+format: safetensors
+size_gb: 2.5
+path: models/GLM-OCR
+serving_target: vllm
+serving_targets:
+  - vllm
+  - sglang
+quantizations: []
+status: downloaded
+downloaded: '2026-05-18'
