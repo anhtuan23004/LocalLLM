@@ -23,8 +23,8 @@ Host (NVIDIA GPU workstation)
 │   ├── unsloth         (training/unsloth)     :8888, :8001, :2222
 │   ├── evaluation      (evaluation/)          run-once
 │   ├── observation     (observation/)         run-once (batch profile)
-│   ├── prometheus      (observation/)         :9090
-│   ├── grafana         (observation/)         :3000
+│   ├── prometheus      (observation/)         host $PROMETHEUS_HOST_PORT → container :9090
+│   ├── grafana         (observation/)         host $GRAFANA_HOST_PORT → container :3000
 │   └── nvidia-gpu-exporter (observation/)     :9835
 │
 ├── Bind mounts:
@@ -72,10 +72,11 @@ Configuration (.env, docker-compose.yml)
 
 **Real-time** (always-on core, optional GPU profile):
 
-- Prometheus scrapes vLLM `/metrics` and, when `--profile gpu` is enabled,
-  nvidia-gpu-exporter every 15s.
-- Grafana dashboard: GPU utilization, VRAM, temperature, vLLM p95 latency, tokens/s, queue depth.
-- Ports: Grafana :3000, Prometheus :9090.
+- Prometheus scrapes vLLM, SGLang, llama.cpp, Ollama state through
+  `ollama-exporter`, and, when `--profile gpu` is enabled, nvidia-gpu-exporter
+  every 15s.
+- Grafana dashboard: GPU utilization, VRAM, temperature, vLLM p95 latency, tokens/s, queue depth, and Ollama availability/model state. The current dashboard does not include SGLang panels.
+- Default host ports are Grafana `3000` and Prometheus `9090`; `observation/.env` can override them with `GRAFANA_HOST_PORT` and `PROMETHEUS_HOST_PORT`.
 
 **Batch** (on-demand via `--profile batch`):
 

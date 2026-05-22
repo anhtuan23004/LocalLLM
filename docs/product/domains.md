@@ -92,14 +92,15 @@ real-time runtime dashboards for inference and GPU metrics.
 | observation | python:3.11-slim | requests, pandas, matplotlib | observation/dashboards/ |
 | prometheus | prom/prometheus | Prometheus | metrics store + scrape targets |
 | grafana | grafana/grafana | Grafana | provisioned datasource + dashboard |
+| ollama-exporter | python:3.11-slim | Ollama API poller | Prometheus metrics for Ollama state |
 | nvidia-gpu-exporter | utkuozdemir/nvidia_gpu_exporter | nvidia-smi exporter | GPU metrics on profile `gpu` |
 
 ### Contracts
 
-- Prometheus scrapes vLLM `/metrics` at `vllm:8000` and the optional GPU exporter at `nvidia-gpu-exporter:9835`.
+- Prometheus scrapes vLLM `/metrics` at `vllm:8000`, SGLang `/metrics` at `sglang:30000`, llama.cpp `/metrics` at `llama-cpp:8080`, Ollama state metrics through `ollama-exporter:9101`, and the optional GPU exporter at `nvidia-gpu-exporter:9835`.
 - Grafana provisions the Prometheus datasource with UID `prometheus`.
-- Grafana loads `llm-local-overview.json` with panels for GPU utilization, VRAM, temperature, vLLM latency, token throughput, and request queue depth.
-- Host ports default to Grafana `3000`, Prometheus `9090`, and GPU exporter `9835`, with `GRAFANA_HOST_PORT`, `PROMETHEUS_HOST_PORT`, and `GPU_EXPORTER_HOST_PORT` overrides.
+- Grafana loads `llm-local-overview.json` with panels for GPU utilization, VRAM, temperature, vLLM latency, token throughput, request queue depth, and Ollama availability/model state. The current dashboard does not include SGLang panels.
+- Host ports default to Grafana `3000`, Prometheus `9090`, and GPU exporter `9835`; environments can override them with `GRAFANA_HOST_PORT`, `PROMETHEUS_HOST_PORT`, and `GPU_EXPORTER_HOST_PORT` in `observation/.env`.
 - GPU exporter is opt-in via `docker compose --profile gpu up -d` because it depends on Linux NVIDIA device/library paths.
 - Runs `collect_metrics.py` as entrypoint.
 - Reads all `benchmark_*.json` files from `evaluation/results/` (bind-mounted).

@@ -36,6 +36,17 @@ while [ $# -gt 0 ]; do
   esac
 done
 
+if [ -f observation/.env ]; then
+  while IFS='=' read -r key value; do
+    case "$key" in
+      ""|\#*) continue ;;
+    esac
+    if [ -z "${!key+x}" ]; then
+      export "$key=$value"
+    fi
+  done < observation/.env
+fi
+
 check() {
   local label="$1"; shift
   if "$@" >/dev/null 2>&1; then
@@ -65,6 +76,7 @@ check "registry validates" ./llm-local model validate
 echo "=== Scripts ==="
 check "convert.sh syntax" bash -n models/convert.sh
 check "validate_registry.py syntax" uv run python -m py_compile models/validate_registry.py
+check "ollama_exporter.py syntax" uv run python -m py_compile observation/scripts/ollama_exporter.py
 check "run_lm_eval.sh syntax" sh -n evaluation/scripts/run_lm_eval.sh
 check "mlx serve.sh syntax" bash -n serving/mlx/serve.sh
 check "smoke.sh syntax" bash -n scripts/smoke.sh

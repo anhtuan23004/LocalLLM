@@ -127,9 +127,15 @@ Real-time monitoring (Prometheus + Grafana):
 cd observation && docker compose up -d
 ```
 
-- Grafana: http://localhost:3000 (admin/admin, anonymous viewing enabled)
-- Prometheus: http://localhost:9090
-- Configure defaults in `observation/.env`; tracked defaults live in `observation/.env.example`.
+- Grafana: `http://localhost:$GRAFANA_HOST_PORT` (admin/admin, anonymous viewing enabled)
+- Prometheus: `http://localhost:$PROMETHEUS_HOST_PORT`
+- Configure environment-specific ports in `observation/.env`; tracked example values live in `observation/.env.example`.
+
+Check the active published ports with:
+
+```bash
+docker ps --format '{{.Names}} {{.Ports}}' | grep -E 'grafana|prometheus'
+```
 
 If those ports are already in use, override them:
 
