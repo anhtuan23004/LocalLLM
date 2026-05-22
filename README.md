@@ -65,6 +65,7 @@ Open WebUI can keep using stable `local-*` names.
 ```bash
 ./llm-local preset list
 ./llm-local preset show chat-small
+./llm-local preset add --from-ollama qwen2.5:0.5b --alias local-ollama
 ./llm-local preset apply chat-small --dry-run --render
 ./llm-local preset apply chat-small
 ./llm-local preset active
@@ -87,6 +88,15 @@ Applied presets are stored as generated local state in `config/active/serving.ya
 (gitignored). Runtime `.env` files remain local machine configuration; `config
 render` translates the active preset into the small set of runtime model env
 values that Docker Compose needs.
+
+Model downloads and Ollama imports do not mutate `models/presets.yaml`
+automatically. They print a suggested `preset add` command instead. Use the
+wrapper when pulling Ollama models so the repo can show the same suggestion:
+
+```bash
+./llm-local ollama pull qwen2.5:0.5b
+./llm-local ollama list
+```
 
 Default host ports avoid common service defaults:
 

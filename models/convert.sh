@@ -168,10 +168,13 @@ cmd_gguf2ollama() {
   trap 'rm -f "$modelfile"' RETURN
   echo "FROM $gguf_file" > "$modelfile"
 
-  echo "[*] Creating Ollama model: $model_name from $gguf_file"
-  ollama create "$model_name" -f "$modelfile"
-  echo "[+] Model available: ollama run $model_name"
-}
+	  echo "[*] Creating Ollama model: $model_name from $gguf_file"
+	  ollama create "$model_name" -f "$modelfile"
+	  echo "[+] Model available: ollama run $model_name"
+	  echo ""
+	  echo "Suggested preset:"
+	  echo "./llm-local preset add --from-ollama $model_name --alias local-ollama --id chat-${model_name//[:.\/]/-}"
+	}
 
 # --- Main ---
 CMD="${1:-}"

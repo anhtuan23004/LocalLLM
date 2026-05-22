@@ -1,5 +1,6 @@
 """Serving preset commands for workflow-level model switching."""
 
+import os
 import shutil
 import subprocess
 import sys
@@ -12,7 +13,7 @@ from manage import RUNTIME_ENV_MAP, resolve_model, select_model
 
 yaml = YAML()
 ROOT = Path(__file__).resolve().parents[1]
-PRESETS_FILE = ROOT / "models" / "presets.yaml"
+PRESETS_FILE = Path(os.environ.get("LLM_LOCAL_PRESETS_FILE", ROOT / "models" / "presets.yaml"))
 STATE_DIR = ROOT / "config" / "active"
 ACTIVE_FILE = STATE_DIR / "serving.yaml"
 LITELLM_DIR = ROOT / "serving" / "litellm"
@@ -35,6 +36,11 @@ def load_presets():
     return data.get("presets", []) or []
 
 
+def save_presets(presets):
+    with PRESETS_FILE.open("w") as handle:
+        yaml.dump({"presets": presets}, handle)
+
+
 def find_preset(preset_id):
     for preset in load_presets():
         if preset.get("id") == preset_id:
@@ -43,6 +49,25 @@ def find_preset(preset_id):
     for preset in load_presets():
         print(f"  {preset.get('id')}")
     sys.exit(1)
+
+
+def preset_exists(preset_id):
+    return any(preset.get("id") == preset_id for preset in load_presets())
+
+
+def slug(value):
+    result = []
+    for char in value.lower():
+        if char.isalnum():
+            result.append(char)
+        elif result and result[-1] != "-":
+            result.append("-")
+    return "".join(result).strip("-")
+
+
+def default_preset_id(runtime, model_name):
+    prefix = "chat" if runtime == "ollama" else runtime.replace(".", "-")
+    return f"{prefix}-{slug(model_name)}"
 
 
 def list_presets():
@@ -63,6 +88,146 @@ def list_presets():
 def show_preset(preset_id):
     preset = find_preset(preset_id)
     yaml.dump(preset, sys.stdout)
+
+
+def preset_for_registry_model(preset_id, model_id, runtime, alias=None):
+    match = resolve_model(model_id, runtime=runtime)
+    gateway_model = match.get("repo", model_id)
+    gateway_alias = alias or f"local-{runtime.replace('.', '-')}"
+    return {
+        "id": preset_id,
+        "description": f"{model_id} through {runtime} and the {gateway_alias} LiteLLM alias.",
+        "runtime": runtime,
+        "model": {
+            "type": "registry",
+            "id": model_id,
+        },
+        "gateway": {
+            "alias": gateway_alias,
+            "provider": "openai",
+            "model": gateway_model,
+        },
+        "requires": [
+            runtime,
+            "litellm",
+        ],
+    }
+
+
+def preset_for_ollama_model(preset_id, model_name, alias=None):
+    gateway_alias = alias or "local-ollama"
+    return {
+        "id": preset_id,
+        "description": f"{model_name} through Ollama and the {gateway_alias} LiteLLM alias.",
+        "runtime": "ollama",
+        "model": {
+            "type": "ollama",
+            "name": model_name,
+        },
+        "gateway": {
+            "alias": gateway_alias,
+            "provider": "ollama_chat",
+            "model": model_name,
+        },
+        "requires": [
+            "ollama",
+            "litellm",
+        ],
+        "optional": [
+            "open-webui",
+        ],
+        "setup_hint": f"docker exec ollama ollama pull {model_name}",
+    }
+
+
+def add_preset(args):
+    runtime = "vllm"
+    model_id = ""
+    ollama_model = ""
+    alias = None
+    preset_id = None
+
+    i = 0
+    while i < len(args):
+        arg = args[i]
+        if arg == "--from-model":
+            i += 1
+            model_id = args[i] if i < len(args) else ""
+        elif arg == "--from-ollama":
+            i += 1
+            ollama_model = args[i] if i < len(args) else ""
+            runtime = "ollama"
+        elif arg == "--runtime":
+            i += 1
+            runtime = args[i] if i < len(args) else ""
+        elif arg == "--alias":
+            i += 1
+            alias = args[i] if i < len(args) else ""
+        elif arg == "--id":
+            i += 1
+            preset_id = args[i] if i < len(args) else ""
+        else:
+            print(f"ERROR: unknown preset add option: {arg}")
+            sys.exit(1)
+        i += 1
+
+    if bool(model_id) == bool(ollama_model):
+        print("ERROR: use exactly one of --from-model or --from-ollama")
+        sys.exit(1)
+
+    model_name = ollama_model or model_id
+    preset_id = preset_id or default_preset_id(runtime, model_name)
+    if preset_exists(preset_id):
+        print(f"ERROR: preset already exists: {preset_id}")
+        sys.exit(1)
+
+    if ollama_model:
+        preset = preset_for_ollama_model(preset_id, ollama_model, alias=alias)
+    else:
+        preset = preset_for_registry_model(preset_id, model_id, runtime, alias=alias)
+    validate_preset(preset)
+
+    presets = load_presets()
+    presets.append(preset)
+    save_presets(presets)
+    print(f"[+] Added serving preset: {preset_id}")
+    print(f"[*] Apply it with: ./llm-local preset apply {preset_id} --render")
+
+
+def suggest_registry_preset(model_id, runtime):
+    preset_id = default_preset_id(runtime, model_id)
+    alias = f"local-{runtime.replace('.', '-')}"
+    print("")
+    print("Suggested preset:")
+    print(
+        f"./llm-local preset add --from-model {model_id} "
+        f"--runtime {runtime} --alias {alias} --id {preset_id}"
+    )
+
+
+def suggest_ollama_preset(model_name):
+    preset_id = default_preset_id("ollama", model_name)
+    print("")
+    print("Suggested preset:")
+    print(
+        f"./llm-local preset add --from-ollama {model_name} "
+        f"--alias local-ollama --id {preset_id}"
+    )
+
+
+def suggest_missing_ollama_presets(model_names):
+    preset_models = {
+        (preset.get("model") or {}).get("name")
+        for preset in load_presets()
+        if preset.get("runtime") == "ollama"
+    }
+    missing = [name for name in model_names if name and name not in preset_models]
+    if not missing:
+        print("[+] All listed Ollama models already have serving presets.")
+        return
+    for name in missing:
+        suggest_ollama_preset(name)
+
 
 
 def model_label(preset):
@@ -261,7 +426,7 @@ def render_active(state=None, dry_run=False):
 
 
 def usage():
-    print("Usage: presets.py <list|show|apply|active|render> [preset-id] [--restart] [--pull] [--render] [--dry-run]")
+    print("Usage: presets.py <list|show|add|apply|active|render|suggest-model|suggest-ollama|suggest-ollama-missing> ...")
 
 
 if __name__ == "__main__":
@@ -276,6 +441,8 @@ if __name__ == "__main__":
             usage()
             sys.exit(1)
         show_preset(sys.argv[2])
+    elif cmd == "add":
+        add_preset(sys.argv[2:])
     elif cmd == "apply":
         if len(sys.argv) < 3:
             usage()
@@ -291,6 +458,18 @@ if __name__ == "__main__":
         show_active()
     elif cmd == "render":
         render_active(dry_run="--dry-run" in sys.argv)
+    elif cmd == "suggest-model":
+        if len(sys.argv) < 4:
+            print("Usage: presets.py suggest-model <model-id> <runtime>")
+            sys.exit(1)
+        suggest_registry_preset(sys.argv[2], sys.argv[3])
+    elif cmd == "suggest-ollama":
+        if len(sys.argv) < 3:
+            print("Usage: presets.py suggest-ollama <model-name>")
+            sys.exit(1)
+        suggest_ollama_preset(sys.argv[2])
+    elif cmd == "suggest-ollama-missing":
+        suggest_missing_ollama_presets(sys.argv[2:])
     else:
         usage()
         sys.exit(1)

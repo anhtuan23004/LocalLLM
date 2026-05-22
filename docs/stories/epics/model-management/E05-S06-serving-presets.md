@@ -26,6 +26,7 @@ gateway alias so user-facing clients can keep stable `local-*` model names.
   branches.
 - `./llm-local preset list` lists configured presets.
 - `./llm-local preset show <id>` prints one preset.
+- `./llm-local preset add ...` explicitly appends a serving preset.
 - `./llm-local preset apply <id>` writes generated local active state to
   `config/active/serving.yaml`.
 - `./llm-local preset apply <id> --dry-run` reports planned changes without
@@ -36,6 +37,12 @@ gateway alias so user-facing clients can keep stable `local-*` model names.
   selection instead of duplicating runtime `.env` logic.
 - Existing `./llm-local model select <id> --runtime <runtime>` remains available
   for power users.
+- `./llm-local model download ...` and `models/convert.sh gguf2ollama ...`
+  print suggested `preset add` commands after successful model creation.
+- `./llm-local ollama pull <model>` wraps `docker exec ollama ollama pull` and
+  prints a suggested Ollama preset.
+- `./llm-local ollama list` wraps `docker exec ollama ollama list` and suggests
+  presets for listed Ollama models missing from `models/presets.yaml`.
 - Documentation uses **Serving Preset** for model workflow switching and avoids
   overloading Docker Compose **profile** terminology.
 
@@ -75,6 +82,7 @@ bash -n llm-local
 uv run python -m py_compile models/presets.py models/manage.py models/validate_registry.py scripts/preflight.py
 ./llm-local preset list
 ./llm-local preset show chat-small
+LLM_LOCAL_PRESETS_FILE=/tmp/presets.yaml ./llm-local preset add --from-ollama smoke-model:latest --alias local-ollama --id smoke-model
 ./llm-local preset apply chat-small --dry-run --render
 ./llm-local preset apply glm-ocr-vllm --dry-run
 ./llm-local preset apply glm-ocr-sglang --dry-run

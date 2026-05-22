@@ -18,8 +18,11 @@ Commands:
   model validate                              Validate registry paths
   preset list                                 List serving presets
   preset show <id>                            Show a serving preset
+  preset add (--from-model ID --runtime RT | --from-ollama NAME) [--alias ALIAS] [--id ID]
   preset apply <id> [--restart] [--pull] [--render] [--dry-run]  Set active serving preset
   preset active                               Show active serving preset state
+  ollama pull <model>                         Pull Ollama model and print preset suggestion
+  ollama list                                 List Ollama models and suggest missing presets
   config render [--dry-run]                   Render active preset into runtime .env files
   eval run [--target ollama|vllm|sglang|llama.cpp|mlx|litellm] [--model NAME] [--num-requests N] [--prompt TEXT] [--api-key KEY]
   eval quality                                Run lm-eval harness
@@ -110,15 +113,37 @@ case "${1:-}" in
       validate) "$PYTHON" "$ROOT/models/validate_registry.py" ;;
       *) usage; exit 1 ;;
     esac ;;
-  preset)
-    case "${2:-}" in
-      list)  "$PYTHON" "$ROOT/models/presets.py" list ;;
-      show)  shift 2; "$PYTHON" "$ROOT/models/presets.py" show "$@" ;;
-      apply) shift 2; "$PYTHON" "$ROOT/models/presets.py" apply "$@" ;;
-      active) "$PYTHON" "$ROOT/models/presets.py" active ;;
-      *) usage; exit 1 ;;
-    esac ;;
-  config)
+	  preset)
+	    case "${2:-}" in
+	      list)  "$PYTHON" "$ROOT/models/presets.py" list ;;
+	      show)  shift 2; "$PYTHON" "$ROOT/models/presets.py" show "$@" ;;
+	      add)   shift 2; "$PYTHON" "$ROOT/models/presets.py" add "$@" ;;
+	      apply) shift 2; "$PYTHON" "$ROOT/models/presets.py" apply "$@" ;;
+	      active) "$PYTHON" "$ROOT/models/presets.py" active ;;
+	      *) usage; exit 1 ;;
+	    esac ;;
+	  ollama)
+	    case "${2:-}" in
+	      pull)
+	        model="${3:-}"
+	        [ -n "$model" ] || { echo "ERROR: ollama pull requires a model name"; exit 1; }
+	        docker exec ollama ollama pull "$model"
+	        "$PYTHON" "$ROOT/models/presets.py" suggest-ollama "$model"
+	        ;;
+	      list)
+	        output="$(docker exec ollama ollama list)"
+	        printf '%s\n' "$output"
+	        models="$(printf '%s\n' "$output" | awk 'NR > 1 && $1 != "" {print $1}')"
+	        if [ -n "$models" ]; then
+	          # shellcheck disable=SC2086
+	          "$PYTHON" "$ROOT/models/presets.py" suggest-ollama-missing $models
+	        fi
+	        ;;
+	      *) usage; exit 1 ;;
+	    esac ;;
+	  # Direct docker exec usage is still supported outside this CLI, but the
+	  # wrapper above is what lets LLM-Local print preset suggestions.
+	  config)
     case "${2:-}" in
       render) shift 2; "$PYTHON" "$ROOT/models/presets.py" render "$@" ;;
       *) usage; exit 1 ;;

@@ -79,6 +79,7 @@ check "validate_registry.py exists" test -f models/validate_registry.py
 check "registry validates" ./llm-local model validate
 check "serving presets list" ./llm-local preset list
 check "serving preset dry run" ./llm-local preset apply chat-small --dry-run --render
+check "serving preset add syntax" sh -c 'tmp=$(mktemp -d); cp models/presets.yaml "$tmp/presets.yaml"; LLM_LOCAL_PRESETS_FILE="$tmp/presets.yaml" ./llm-local preset add --from-ollama smoke-model:latest --alias local-ollama --id smoke-model >/dev/null; rm -rf "$tmp"'
 
 echo "=== Scripts ==="
 check "convert.sh syntax" bash -n models/convert.sh
