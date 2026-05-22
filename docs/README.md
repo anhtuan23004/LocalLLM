@@ -15,6 +15,8 @@ contract derived from repository intake.
 ## Folders
 
 - `product/`: current LLM-Local product truth.
+- `runbooks/`: end-to-end operational paths with expected outputs and failure
+  modes.
 - `stories/`: feature packets and backlog.
 - `stories/initiatives/`: larger multi-story initiatives before slicing.
 - `decisions/`: durable decisions and tradeoffs.

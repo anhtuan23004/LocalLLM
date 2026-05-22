@@ -91,6 +91,11 @@ $ curl -fsS 'http://localhost:9092/api/v1/query?query=up%7Bjob%3D%22litellm%22%7
 $ curl -fsS 'http://localhost:9092/api/v1/targets?state=active'
 # includes scrapeUrl "http://litellm:4000/metrics/" with health "up".
 
+$ prometheus query: litellm_requests_metric_created
+# user-provided VPS proof returned one LiteLLM request series for
+# api_provider="ollama_chat", model="qwen2.5:0.5b",
+# instance="litellm:4000", job="litellm", user_agent="curl/7.68.0".
+
 $ ./llm-local observe down && ./llm-local serve litellm down
 # stops and removes the temporary containers.
 ```

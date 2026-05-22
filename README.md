@@ -139,6 +139,9 @@ Benchmark through the LiteLLM gateway:
 make benchmark-litellm MODEL=local-ollama N=20
 ```
 
+For the Phase 2 end-to-end Ollama workflow, use
+`docs/runbooks/ollama-golden-path.md`.
+
 Quality evaluation through lm-eval-harness:
 
 ```bash

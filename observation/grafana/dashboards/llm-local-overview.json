@@ -88,7 +88,7 @@
       "title": "LiteLLM Total Requests",
       "type": "timeseries",
       "gridPos": {"h": 8, "w": 8, "x": 0, "y": 30},
-      "targets": [{"expr": "sum(litellm_proxy_total_requests_metric) or sum(litellm_proxy_total_requests_metric_total)", "legendFormat": "requests"}],
+      "targets": [{"expr": "sum(litellm_proxy_total_requests_metric) or sum(litellm_proxy_total_requests_metric_total) or sum(litellm_requests_metric_total)", "legendFormat": "requests"}],
       "datasource": {"type": "prometheus", "uid": "prometheus"}
     },
     {
