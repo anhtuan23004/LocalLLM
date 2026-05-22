@@ -2,8 +2,8 @@
 
 ## Discovery Answers (LLM-Local)
 
-- **Product surfaces**: CLI (`llm-local`, Makefile), REST APIs (Ollama, vLLM, SGLang, llama.cpp, MLX-LM OpenAI-compat), Jupyter Lab (training), Grafana/Prometheus (observation).
-- **Runtime stack**: Docker Compose, Python 3.11, NVIDIA CUDA GPU, vLLM, SGLang, llama.cpp, Ollama, Unsloth, Prometheus, Grafana, and host-side MLX-LM on Apple Silicon.
+- **Product surfaces**: CLI (`llm-local`, Makefile), REST APIs (Ollama, vLLM, SGLang, llama.cpp, MLX-LM OpenAI-compat, LiteLLM gateway), Jupyter Lab (training), Grafana/Prometheus (observation).
+- **Runtime stack**: Docker Compose, Python 3.11, NVIDIA CUDA GPU, vLLM, SGLang, llama.cpp, Ollama, LiteLLM, Unsloth, Prometheus, Grafana, and host-side MLX-LM on Apple Silicon.
 - **Core domains**: Serving, Training, Evaluation, Observation, Model Management.
 - **Boundary inputs**: CLI arguments (benchmark params, model download args), environment variables (.env files), HTTP API requests (OpenAI-compat), filesystem (model weights, benchmark JSON, CSV/PNG output).
 - **Validation ladder**: Docker healthchecks → benchmark JSON schema → metrics CSV + chart generation → cross-service network reachability.
@@ -20,6 +20,7 @@ Host (NVIDIA GPU workstation)
 │   ├── vllm            (serving/vllm)         host :18000 → container :8000
 │   ├── sglang          (serving/sglang)       host :18030 → container :30000
 │   ├── llama-cpp       (serving/llama.cpp)    host :18080 → container :8080
+│   ├── litellm         (serving/litellm)      host :18040 → container :4000
 │   ├── unsloth         (training/unsloth)     :8888, :8001, :2222
 │   ├── evaluation      (evaluation/)          run-once
 │   ├── observation     (observation/)         run-once (batch profile)
@@ -72,10 +73,14 @@ Configuration (.env, docker-compose.yml)
 
 **Real-time** (always-on core, optional GPU profile):
 
-- Prometheus scrapes vLLM, SGLang, llama.cpp, Ollama state through
+- Prometheus scrapes vLLM, SGLang, llama.cpp, LiteLLM, Ollama state through
   `ollama-exporter`, and, when `--profile gpu` is enabled, nvidia-gpu-exporter
   every 15s.
-- Grafana dashboard: GPU utilization, VRAM, temperature, vLLM p95 latency, tokens/s, queue depth, and Ollama availability/model state. The current dashboard does not include SGLang panels.
+- Grafana dashboard: GPU utilization, VRAM, temperature, vLLM p95 latency,
+  tokens/s, queue depth, Ollama availability/model state, and LiteLLM gateway
+  request totals, failed request totals, token totals, and in-flight requests
+  when present. The current dashboard does not include SGLang runtime-specific
+  panels.
 - Default host ports are Grafana `3000` and Prometheus `9090`; `observation/.env` can override them with `GRAFANA_HOST_PORT` and `PROMETHEUS_HOST_PORT`.
 
 **Batch** (on-demand via `--profile batch`):

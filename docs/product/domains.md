@@ -13,6 +13,7 @@ Expose LLM inference endpoints on the local network.
 | SGLang | lmsysorg/sglang | OpenAI-compatible | 18030 | 30000 | GPU 0 by default |
 | llama.cpp | ghcr.io/ggml-org/llama.cpp | OpenAI-compatible | 18080 | 8080 | GPU 0 by default |
 | MLX-LM | mlx-lm host process | OpenAI-compatible | 18081 | 18081 | Apple Silicon Metal |
+| LiteLLM | docker.litellm.ai/berriai/litellm | OpenAI-compatible gateway | 18040 | 4000 | none |
 
 ### Contracts
 
@@ -21,6 +22,9 @@ Expose LLM inference endpoints on the local network.
 - SGLang exposes `/v1/chat/completions`, `/v1/completions`, `/v1/embeddings`, `/health`, and `/metrics`.
 - llama.cpp exposes OpenAI-compatible `/v1/chat/completions` and `/v1/embeddings` for GGUF models.
 - MLX-LM exposes OpenAI-compatible chat completions from a host Apple Silicon process.
+- LiteLLM exposes OpenAI-compatible `/v1/models` and `/v1/chat/completions`
+  as a gateway to local runtimes. Stable aliases are `local-ollama`,
+  `local-vllm`, `local-sglang`, `local-llama-cpp`, and `local-mlx`.
 - Docker services join `llm-net` and are reachable by container name from other services.
 - Healthchecks defined: Ollama via `ollama list`, vLLM via curl `/health`, SGLang via curl `/health`.
 
@@ -31,6 +35,9 @@ Expose LLM inference endpoints on the local network.
 - SGLang: `.env` file controls model path, host/container ports, tensor parallelism, memory fraction, and GPU allocation.
 - llama.cpp: `.env` file controls GGUF model path, host/container ports, context size, parallel slots, and GPU layer offload.
 - MLX-LM: `.env` file controls host model id/path and port; it runs outside Docker on Apple Silicon.
+- LiteLLM: `.env` file controls host/container ports, proxy master key,
+  upstream API base URLs, upstream API keys for OpenAI-compatible runtimes, and
+  the model strings exposed behind the `local-*` aliases.
 - Host ports use the `18xxx` range by default to avoid common local service conflicts while keeping runtime/container ports unchanged.
 
 ---
@@ -69,9 +76,11 @@ Benchmark model serving endpoints for latency and quality.
 
 ### Contracts
 
-- Runs `run_benchmark.py` as entrypoint with CLI args: `--endpoint`, `--model-name`, `--num-requests`, `--prompt`.
+- Runs `run_benchmark.py` as entrypoint with CLI args: `--endpoint`, `--model-name`, `--num-requests`, `--prompt`, and optional `--api-key`.
 - Sends N chat completion requests, records per-request latency.
 - Outputs JSON with summary stats (avg/min/max latency, success count).
+- `./llm-local eval run --target litellm --model <alias>` routes benchmark
+  traffic through the LiteLLM gateway and passes the local gateway bearer token.
 - Runs `lm_eval` through `run_lm_eval.sh` for quality evaluation against OpenAI-compatible serving endpoints.
 - Uses `local-chat-completions` by default with `--apply_chat_template`, `--batch_size 1`, and env-configured model/task/endpoint values.
 - Defaults to a small smoke run (`LM_EVAL_TASKS=gsm8k`, `LM_EVAL_LIMIT=10`) so local validation is bounded on a 12GB VRAM target.
@@ -97,9 +106,13 @@ real-time runtime dashboards for inference and GPU metrics.
 
 ### Contracts
 
-- Prometheus scrapes vLLM `/metrics` at `vllm:8000`, SGLang `/metrics` at `sglang:30000`, llama.cpp `/metrics` at `llama-cpp:8080`, Ollama state metrics through `ollama-exporter:9101`, and the optional GPU exporter at `nvidia-gpu-exporter:9835`.
+- Prometheus scrapes vLLM `/metrics` at `vllm:8000`, SGLang `/metrics` at `sglang:30000`, llama.cpp `/metrics` at `llama-cpp:8080`, Ollama state metrics through `ollama-exporter:9101`, LiteLLM gateway metrics at `litellm:4000/metrics/`, and the optional GPU exporter at `nvidia-gpu-exporter:9835`.
 - Grafana provisions the Prometheus datasource with UID `prometheus`.
-- Grafana loads `llm-local-overview.json` with panels for GPU utilization, VRAM, temperature, vLLM latency, token throughput, request queue depth, and Ollama availability/model state. The current dashboard does not include SGLang panels.
+- Grafana loads `llm-local-overview.json` with panels for GPU utilization,
+  VRAM, temperature, vLLM latency, token throughput, request queue depth,
+  Ollama availability/model state, and LiteLLM gateway request totals, failed
+  request totals, token totals, and in-flight requests when present. The
+  current dashboard does not include SGLang runtime-specific panels.
 - Host ports default to Grafana `3000`, Prometheus `9090`, and GPU exporter `9835`; environments can override them with `GRAFANA_HOST_PORT`, `PROMETHEUS_HOST_PORT`, and `GPU_EXPORTER_HOST_PORT` in `observation/.env`.
 - GPU exporter is opt-in via `docker compose --profile gpu up -d` because it depends on Linux NVIDIA device/library paths.
 - Runs `collect_metrics.py` as entrypoint.

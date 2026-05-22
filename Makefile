@@ -1,12 +1,12 @@
 .PHONY: network ollama-up ollama-down vllm-up vllm-down \
        sglang-up sglang-down llama-cpp-up llama-cpp-down mlx-up \
+       litellm-up litellm-down \
        train-up train-down \
        observe-up observe-down observe-batch \
-       benchmark-ollama benchmark-vllm eval-quality \
+       benchmark-ollama benchmark-vllm benchmark-litellm eval-quality \
        validate validate-compose validate-health validate-registry \
        smoke down help
 
-MODEL ?= llama3
 N ?= 10
 PROMPT ?= Explain briefly what a neural network is.
 
@@ -42,6 +42,12 @@ llama-cpp-down:
 mlx-up: ## Start MLX-LM server on host
 	./llm-local serve mlx up
 
+litellm-up: ## Start LiteLLM gateway
+	./llm-local serve litellm up
+
+litellm-down:
+	./llm-local serve litellm down
+
 # --- Training ---
 
 train-up: ## Start Unsloth training environment
@@ -63,11 +69,17 @@ observe-batch: ## Generate batch report from benchmark results
 
 # --- Evaluation ---
 
+benchmark-ollama: MODEL ?= llama3
 benchmark-ollama: ## Benchmark Ollama (MODEL=x N=x)
 	./llm-local eval run --target ollama --model $(MODEL) --num-requests $(N) --prompt "$(PROMPT)"
 
+benchmark-vllm: MODEL ?= llama3
 benchmark-vllm: ## Benchmark vLLM (MODEL=x N=x)
 	./llm-local eval run --target vllm --model $(MODEL) --num-requests $(N) --prompt "$(PROMPT)"
+
+benchmark-litellm: MODEL ?= local-ollama
+benchmark-litellm: ## Benchmark LiteLLM gateway (MODEL=local-ollama N=x)
+	./llm-local eval run --target litellm --model $(MODEL) --num-requests $(N) --prompt "$(PROMPT)"
 
 eval-quality: ## Run lm-eval quality benchmark against vLLM
 	./llm-local eval quality
@@ -79,6 +91,7 @@ validate-compose: ## Verify all docker-compose configs are valid
 	docker compose -f serving/vllm/docker-compose.yml config >/dev/null
 	docker compose -f serving/sglang/docker-compose.yml config >/dev/null
 	docker compose -f serving/llama.cpp/docker-compose.yml config >/dev/null
+	docker compose -f serving/litellm/docker-compose.yml config >/dev/null
 	docker compose -f training/unsloth/docker-compose.yml config >/dev/null
 	docker compose -f evaluation/docker-compose.yml config >/dev/null
 	docker compose -f observation/docker-compose.yml config >/dev/null
@@ -103,6 +116,7 @@ down: ## Stop all services
 	-./llm-local serve vllm down
 	-./llm-local serve sglang down
 	-./llm-local serve llama.cpp down
+	-./llm-local serve litellm down
 	-./llm-local train down
 	-./llm-local observe down
 

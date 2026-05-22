@@ -16,9 +16,9 @@ Commands:
   model select <id> [--runtime RT] [--restart]   Select model for runtime (default: vllm)
   model rm <model-id> [--force]               Remove model and update registry
   model validate                              Validate registry paths
-  eval run [--target ollama|vllm|sglang|llama.cpp|mlx] [--model NAME] [--num-requests N] [--prompt TEXT]
+  eval run [--target ollama|vllm|sglang|llama.cpp|mlx|litellm] [--model NAME] [--num-requests N] [--prompt TEXT] [--api-key KEY]
   eval quality                                Run lm-eval harness
-  serve <ollama|vllm|sglang|llama.cpp|mlx> [up|down]  Manage serving
+  serve <ollama|vllm|sglang|llama.cpp|mlx|litellm> [up|down]  Manage serving
   train [up|down]                            Manage training
   observe [up|down|batch]                    Manage observability
   status                                     Show service and model status
@@ -32,6 +32,7 @@ eval_run() {
   local model=""
   local num_requests=""
   local prompt=""
+  local api_key=""
 
   while [ $# -gt 0 ]; do
     case "$1" in
@@ -55,6 +56,11 @@ eval_run() {
         [ -n "$prompt" ] || { echo "ERROR: --prompt requires a value"; exit 1; }
         shift 2
         ;;
+      --api-key)
+        api_key="${2:-}"
+        [ -n "$api_key" ] || { echo "ERROR: --api-key requires a value"; exit 1; }
+        shift 2
+        ;;
       *)
         echo "Unknown eval run option: $1"
         usage
@@ -69,14 +75,19 @@ eval_run() {
     vllm)     endpoint="http://vllm:8000" ;;
     sglang)   endpoint="http://sglang:30000" ;;
     llama.cpp) endpoint="http://llama-cpp:8080" ;;
-    mlx)      endpoint="http://host.docker.internal:8081" ;;
-    *) echo "ERROR: --target must be ollama, vllm, sglang, llama.cpp, or mlx"; exit 1 ;;
+    mlx)      endpoint="http://host.docker.internal:18081" ;;
+    litellm)  endpoint="http://litellm:4000" ;;
+    *) echo "ERROR: --target must be ollama, vllm, sglang, llama.cpp, mlx, or litellm"; exit 1 ;;
   esac
 
   local run_args=(--endpoint "$endpoint")
+  if [ "$target" = "litellm" ] && [ -z "$api_key" ]; then
+    api_key="${LITELLM_MASTER_KEY:-sk-local-litellm}"
+  fi
   [ -n "$model" ] && run_args+=(--model-name "$model")
   [ -n "$num_requests" ] && run_args+=(--num-requests "$num_requests")
   [ -n "$prompt" ] && run_args+=(--prompt "$prompt")
+  [ -n "$api_key" ] && run_args+=(--api-key "$api_key")
 
   cd "$ROOT/evaluation" && docker compose run --rm evaluation "${run_args[@]}"
 }
@@ -101,7 +112,7 @@ case "${1:-}" in
   serve)
     svc="${2:-ollama}"; action="${3:-up}"
     case "$svc" in
-      ollama|vllm|sglang|llama.cpp) ;;
+      ollama|vllm|sglang|llama.cpp|litellm) ;;
       mlx)
         case "$action" in
           up) "$ROOT/serving/mlx/serve.sh" ;;
@@ -110,7 +121,7 @@ case "${1:-}" in
         esac
         exit 0
         ;;
-      *) echo "ERROR: service must be ollama, vllm, sglang, llama.cpp, or mlx"; exit 1 ;;
+      *) echo "ERROR: service must be ollama, vllm, sglang, llama.cpp, mlx, or litellm"; exit 1 ;;
     esac
     case "$action" in
       up)   docker network create llm-net 2>/dev/null || true
@@ -136,7 +147,7 @@ case "${1:-}" in
     esac ;;
   status)
     echo "=== Services ==="
-    for svc in ollama vllm sglang llama-cpp; do
+    for svc in ollama vllm sglang llama-cpp litellm; do
       state=$(docker inspect --format='{{.State.Health.Status}}' "$svc" 2>/dev/null || echo "not running")
       printf "  %-12s %s\n" "$svc" "$state"
     done

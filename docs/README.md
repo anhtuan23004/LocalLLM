@@ -16,6 +16,7 @@ contract derived from repository intake.
 
 - `product/`: current LLM-Local product truth.
 - `stories/`: feature packets and backlog.
+- `stories/initiatives/`: larger multi-story initiatives before slicing.
 - `decisions/`: durable decisions and tradeoffs.
 - `templates/`: reusable spec-intake, story, decision, and validation formats.
 

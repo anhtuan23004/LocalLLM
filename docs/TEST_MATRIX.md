@@ -33,6 +33,10 @@ evidence exist.
 | E05-S04 | GGUF files import into Ollama through generated Modelfile | yes | no | no | no | implemented | docs/stories/epics/model-management/E05-S04-gguf-to-ollama.md |
 | E05-S05 | Model registry validation checks paths and expected files | yes | yes | no | no | implemented | docs/stories/epics/model-management/E05-S05-registry-validation.md |
 | E06-S01 | Prometheus + Grafana provide real-time inference and optional GPU dashboards | yes | yes | no | no | implemented | docs/stories/epics/observation/E06-S01-prometheus-grafana-realtime.md |
+| E07-S01 | LiteLLM gateway routes OpenAI-compatible requests to Ollama | no | yes | no | no | implemented | docs/stories/epics/serving/E07-S01-minimal-litellm-gateway.md |
+| E07-S02 | LiteLLM gateway exposes aliases for vLLM, SGLang, llama.cpp, and MLX-LM | no | yes | no | no | implemented | docs/stories/epics/serving/E07-S02-litellm-multi-runtime-routing.md |
+| E07-S03 | Evaluation can benchmark through LiteLLM with gateway auth | yes | yes | no | no | implemented | docs/stories/epics/evaluation/E07-S03-litellm-evaluation-target.md |
+| E07-S04 | Prometheus scrapes LiteLLM and Grafana shows gateway panels | yes | yes | no | no | implemented | docs/stories/epics/observation/E07-S04-litellm-observability.md |
 | Cross-S01 | All services reachable on llm-net | no | yes | no | yes | implemented | docs/stories/epics/cross/Cross-S01-llm-net-reachability.md |
 | Cross-S02 | Makefile orchestration targets work and compose configs validate | yes | yes | no | no | implemented | docs/stories/epics/cross/Cross-S02-makefile-orchestration.md |
 | Cross-S04 | Compose configuration matches product contracts | n/a | yes | no | no | implemented | docs/stories/epics/cross/Cross-S04-compose-contract-drift.md |

@@ -9,7 +9,11 @@ Local LLM infrastructure for serving, training, evaluation, and observation.
 ├── datasets/            Shared training datasets
 ├── serving/             Model serving services
 │   ├── ollama/          Ollama (general LLM serving)
-│   └── vllm/            vLLM OpenAI-compatible serving
+│   ├── vllm/            vLLM OpenAI-compatible serving
+│   ├── sglang/          SGLang OpenAI-compatible serving
+│   ├── llama.cpp/       llama.cpp OpenAI-compatible serving
+│   ├── mlx/             MLX-LM host OpenAI-compatible serving
+│   └── litellm/         LiteLLM gateway
 ├── training/            Model training/fine-tuning
 │   └── unsloth/         Unsloth fine-tuning environment
 ├── evaluation/          Benchmark and evaluation tools
@@ -59,6 +63,7 @@ Default host ports avoid common service defaults:
 | SGLang | `18030` | `30000` |
 | llama.cpp | `18080` | `8080` |
 | MLX-LM | `18081` | `18081` |
+| LiteLLM | `18040` | `4000` |
 
 Default serving targets are inferred from the downloaded format:
 
@@ -100,9 +105,23 @@ cd serving/llama.cpp && docker compose up -d
 # MLX-LM on Apple Silicon (configure .env first)
 serving/mlx/serve.sh
 
+# LiteLLM gateway (configure .env first)
+cd serving/litellm && docker compose up -d
+
 # Unsloth training
 cd training/unsloth && docker compose up -d
 ```
+
+LiteLLM aliases are configured in `serving/litellm/config.yaml` and backed by
+environment values from `serving/litellm/.env`:
+
+| Alias | Runtime |
+| --- | --- |
+| `local-ollama` | Ollama |
+| `local-vllm` | vLLM |
+| `local-sglang` | SGLang |
+| `local-llama-cpp` | llama.cpp |
+| `local-mlx` | MLX-LM host server |
 
 ### Run Evaluation
 
@@ -111,6 +130,13 @@ cd evaluation && docker compose run --rm evaluation \
   --endpoint http://ollama:11434 \
   --model-name llama3 \
   --num-requests 20
+```
+
+Benchmark through the LiteLLM gateway:
+
+```bash
+./llm-local eval run --target litellm --model local-ollama --num-requests 20
+make benchmark-litellm MODEL=local-ollama N=20
 ```
 
 Quality evaluation through lm-eval-harness:
@@ -156,3 +182,7 @@ cd observation && docker compose --profile batch run --rm observation
 ```
 
 Results are saved to `evaluation/results/` and visualizations to `observation/dashboards/`.
+
+Prometheus also scrapes LiteLLM at `litellm:4000/metrics/` when the gateway is running.
+LiteLLM request and token panels populate after benchmark or client traffic is
+routed through the gateway.

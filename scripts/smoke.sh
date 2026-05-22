@@ -63,6 +63,7 @@ check "serving/ollama" docker compose -f serving/ollama/docker-compose.yml confi
 check "serving/vllm" docker compose -f serving/vllm/docker-compose.yml config
 check "serving/sglang" docker compose -f serving/sglang/docker-compose.yml config
 check "serving/llama.cpp" docker compose -f serving/llama.cpp/docker-compose.yml config
+check "serving/litellm" docker compose -f serving/litellm/docker-compose.yml config
 check "training/unsloth" docker compose -f training/unsloth/docker-compose.yml config
 check "evaluation" docker compose -f evaluation/docker-compose.yml config
 check "observation" docker compose -f observation/docker-compose.yml config
