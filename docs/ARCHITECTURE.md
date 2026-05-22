@@ -2,8 +2,8 @@
 
 ## Discovery Answers (LLM-Local)
 
-- **Product surfaces**: CLI (`llm-local`, Makefile), REST APIs (Ollama, vLLM, SGLang, llama.cpp, MLX-LM OpenAI-compat, LiteLLM gateway), Jupyter Lab (training), Grafana/Prometheus (observation).
-- **Runtime stack**: Docker Compose, Python 3.11, NVIDIA CUDA GPU, vLLM, SGLang, llama.cpp, Ollama, LiteLLM, Unsloth, Prometheus, Grafana, and host-side MLX-LM on Apple Silicon.
+- **Product surfaces**: CLI (`llm-local`, Makefile), REST APIs (Ollama, vLLM, SGLang, llama.cpp, MLX-LM OpenAI-compat, LiteLLM gateway), Open WebUI browser UI, Jupyter Lab (training), Grafana/Prometheus (observation).
+- **Runtime stack**: Docker Compose, Python 3.11, NVIDIA CUDA GPU, vLLM, SGLang, llama.cpp, Ollama, LiteLLM, Open WebUI, Unsloth, Prometheus, Grafana, and host-side MLX-LM on Apple Silicon.
 - **Core domains**: Serving, Training, Evaluation, Observation, Model Management.
 - **Boundary inputs**: CLI arguments (benchmark params, model download args), environment variables (.env files), HTTP API requests (OpenAI-compat), filesystem (model weights, benchmark JSON, CSV/PNG output).
 - **Validation ladder**: Docker healthchecks → benchmark JSON schema → metrics CSV + chart generation → cross-service network reachability.
@@ -21,6 +21,7 @@ Host (NVIDIA GPU workstation)
 │   ├── sglang          (serving/sglang)       host :18030 → container :30000
 │   ├── llama-cpp       (serving/llama.cpp)    host :18080 → container :8080
 │   ├── litellm         (serving/litellm)      host :18040 → container :4000
+│   ├── open-webui      (clients/open-webui)   host :18088 → container :8080
 │   ├── unsloth         (training/unsloth)     :8888, :8001, :2222
 │   ├── evaluation      (evaluation/)          run-once
 │   ├── observation     (observation/)         run-once (batch profile)
@@ -48,7 +49,7 @@ LLM-Local is infrastructure-as-code, not a domain application. The relevant
 layers are:
 
 ```text
-Configuration (.env, docker-compose.yml)
+Configuration (.env, docker-compose.yml, config/active/serving.yaml)
   <- Services (Docker containers)
     <- Scripts (Python CLI tools)
       <- Shared Resources (models/, datasets/, results/)
@@ -65,6 +66,8 @@ Configuration (.env, docker-compose.yml)
 ## Parse-First Boundary Rule (adapted)
 
 - `.env` files parsed by Docker Compose before container start.
+- `config/active/serving.yaml` is generated from serving presets; `config render`
+  translates it into runtime `.env` model values.
 - CLI arguments parsed by argparse in Python scripts.
 - Benchmark results validated as JSON before observation consumes them.
 - Model paths validated by download script before writing.

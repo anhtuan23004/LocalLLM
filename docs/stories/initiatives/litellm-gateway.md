@@ -39,8 +39,7 @@ clients / evaluation / Open WebUI
 - Observation already scrapes Prometheus targets, and LiteLLM can expose proxy
   metrics when configured with the Prometheus callback.
 
-Current implementation status: E07-S01 through E07-S04 are implemented; E07-S05
-Open WebUI remains planned.
+Current implementation status: E07-S01 through E07-S05 are implemented.
 - LiteLLM gives a cleaner path to request-level metrics for Ollama than the
   current `ollama-exporter`, which only exports Ollama state.
 
@@ -76,6 +75,7 @@ Host
 |   +-- vllm            (serving/vllm)         host :18000 -> container :8000
 |   +-- sglang          (serving/sglang)       host :18030 -> container :30000
 |   +-- llama-cpp       (serving/llama.cpp)    host :18080 -> container :8080
+|   +-- open-webui      (clients/open-webui)   host :18088 -> container :8080
 |   +-- prometheus      (observation/)         host $PROMETHEUS_HOST_PORT -> container :9090
 |   +-- grafana         (observation/)         host $GRAFANA_HOST_PORT -> container :3000
 |
@@ -95,6 +95,11 @@ reach it through the host route when `local-mlx` is enabled.
 serving/litellm/
   docker-compose.yml
   config.yaml
+  .env.example
+  README.md
+
+clients/open-webui/
+  docker-compose.yml
   .env.example
   README.md
 
@@ -267,6 +272,8 @@ Acceptance:
 
 ### E07-S05 Open WebUI Adapter
 
+Implemented in `docs/stories/epics/clients/E07-S05-open-webui-adapter.md`.
+
 Product contract:
 
 - Open WebUI connects to LiteLLM instead of directly to each runtime.
@@ -278,8 +285,9 @@ Acceptance:
 - Its OpenAI-compatible base URL is configured as `http://litellm:4000/v1`.
 - Its local setup docs include the browser URL, login/setup steps, and the
   LiteLLM model-list smoke path.
-- A local browser smoke verifies Open WebUI can load the model list through
-  LiteLLM.
+- Runtime proof confirms Open WebUI serves the browser page and can reach
+  LiteLLM's `/v1/models` endpoint from inside the client container. First-login
+  and prompt smoke remain manual browser checks.
 
 ## Validation Ladder
 
@@ -329,3 +337,5 @@ Acceptance:
 - Benchmarking through LiteLLM produces JSON evidence.
 - LiteLLM Prometheus metrics appear after routed requests.
 - Grafana clearly separates runtime-native metrics from LiteLLM gateway metrics.
+- Open WebUI can be opened in a browser and lists LiteLLM aliases through the
+  gateway.

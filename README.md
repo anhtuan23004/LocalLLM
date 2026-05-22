@@ -14,6 +14,8 @@ Local LLM infrastructure for serving, training, evaluation, and observation.
 │   ├── llama.cpp/       llama.cpp OpenAI-compatible serving
 │   ├── mlx/             MLX-LM host OpenAI-compatible serving
 │   └── litellm/         LiteLLM gateway
+├── clients/             Interactive clients
+│   └── open-webui/      Open WebUI browser UI
 ├── training/            Model training/fine-tuning
 │   └── unsloth/         Unsloth fine-tuning environment
 ├── evaluation/          Benchmark and evaluation tools
@@ -54,6 +56,38 @@ python models/assemble_registry.py
 
 This builds `models/registry.yaml` from all sidecar files.
 
+### Serving Presets
+
+Serving presets are the easiest way to switch a whole local workflow. A preset
+binds the model, serving runtime, and LiteLLM alias together so clients such as
+Open WebUI can keep using stable `local-*` names.
+
+```bash
+./llm-local preset list
+./llm-local preset show chat-small
+./llm-local preset apply chat-small --dry-run --render
+./llm-local preset apply chat-small
+./llm-local preset active
+./llm-local config render
+```
+
+Use `--pull` when the preset uses an Ollama model that still needs to be pulled,
+`--render` when you want to update runtime `.env` files immediately, and
+`--restart` when you want the affected runtime and LiteLLM restarted after
+rendering:
+
+```bash
+./llm-local preset apply chat-small --pull --render --restart
+```
+
+`profile` is reserved for Docker Compose profiles such as `gpu`, `batch`, and
+`quality`; model workflow bindings are called serving presets.
+
+Applied presets are stored as generated local state in `config/active/serving.yaml`
+(gitignored). Runtime `.env` files remain local machine configuration; `config
+render` translates the active preset into the small set of runtime model env
+values that Docker Compose needs.
+
 Default host ports avoid common service defaults:
 
 | Service | Host port | Container/runtime port |
@@ -64,6 +98,7 @@ Default host ports avoid common service defaults:
 | llama.cpp | `18080` | `8080` |
 | MLX-LM | `18081` | `18081` |
 | LiteLLM | `18040` | `4000` |
+| Open WebUI | `18088` | `8080` |
 
 Default serving targets are inferred from the downloaded format:
 
@@ -75,42 +110,56 @@ Default serving targets are inferred from the downloaded format:
 Use `--target mlx` for MLX-converted models or repeat `--target` to set multiple
 targets explicitly.
 
-### Select vLLM Model
+### Select Runtime Model
 
 ```bash
-# List available vllm-targeted models
+# List available models
 ./llm-local model list
 
-# Switch the active model
-./llm-local model select GLM-OCR
+# Power-user path: switch one runtime directly
+./llm-local model select GLM-OCR --runtime vllm --restart
 ```
 
-This updates `serving/vllm/.env` with the correct model path and name.
+This updates the selected runtime `.env` with the correct model path and name.
+For normal workflow switching, prefer `./llm-local preset apply <id>`.
 
 ### Start Services
 
 ```bash
+# Optional: inspect startup guardrails before changing services
+./llm-local guardrails --all
+
 # Ollama
-cd serving/ollama && docker compose up -d
+./llm-local serve ollama up
 
 # vLLM (configure .env first)
-cd serving/vllm && docker compose up -d
+./llm-local serve vllm up
 
 # SGLang (configure .env first)
-cd serving/sglang && docker compose up -d
+./llm-local serve sglang up
 
 # llama.cpp (configure .env first, requires GGUF)
-cd serving/llama.cpp && docker compose up -d
+./llm-local serve llama.cpp up
 
 # MLX-LM on Apple Silicon (configure .env first)
-serving/mlx/serve.sh
+./llm-local serve mlx up
 
 # LiteLLM gateway (configure .env first)
-cd serving/litellm && docker compose up -d
+./llm-local serve litellm up
+
+# Open WebUI browser client (configure .env first)
+./llm-local webui up
 
 # Unsloth training
-cd training/unsloth && docker compose up -d
+./llm-local train up
 ```
+
+`llm-local` runs startup guardrails before `serve ... up`, `webui up`, and
+`train up`. The guardrails check host port conflicts, running service health,
+model/runtime compatibility for configured local model paths, and the GPU budget
+rules from `docs/decisions/0005-gpu-budget-allocation.md`.
+On known-good remote Docker hosts where `nvidia-smi` is unavailable locally, set
+`LLM_LOCAL_SKIP_GPU_CHECK=1` to bypass only the local GPU probe.
 
 LiteLLM aliases are configured in `serving/litellm/config.yaml` and backed by
 environment values from `serving/litellm/.env`:
@@ -122,6 +171,18 @@ environment values from `serving/litellm/.env`:
 | `local-sglang` | SGLang |
 | `local-llama-cpp` | llama.cpp |
 | `local-mlx` | MLX-LM host server |
+
+### Interactive UI
+
+Open WebUI is configured as a client of LiteLLM:
+
+```bash
+./llm-local serve litellm up
+./llm-local webui up
+```
+
+Open `http://localhost:18088`, create the first local admin account, and select
+a LiteLLM alias such as `local-ollama`.
 
 ### Run Evaluation
 

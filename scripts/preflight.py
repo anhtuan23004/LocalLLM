@@ -1,0 +1,304 @@
+#!/usr/bin/env python3
+"""Preflight checks for local runtime startup."""
+
+from __future__ import annotations
+
+import argparse
+import os
+import socket
+import subprocess
+import sys
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+SERVICES = {
+    "ollama": {
+        "dir": "serving/ollama",
+        "container": "ollama",
+        "host_port": ("HOST_PORT", 18134),
+        "gpu": True,
+        "all_gpus": True,
+    },
+    "vllm": {
+        "dir": "serving/vllm",
+        "container": "vllm",
+        "host_port": ("HOST_PORT", 18000),
+        "gpu": True,
+        "all_gpus": False,
+        "model_key": "VLLM_MODEL_PATH",
+    },
+    "sglang": {
+        "dir": "serving/sglang",
+        "container": "sglang",
+        "host_port": ("HOST_PORT", 18030),
+        "gpu": True,
+        "all_gpus": False,
+        "model_key": "SGLANG_MODEL_PATH",
+    },
+    "llama.cpp": {
+        "dir": "serving/llama.cpp",
+        "container": "llama-cpp",
+        "host_port": ("HOST_PORT", 18080),
+        "gpu": True,
+        "all_gpus": False,
+        "model_key": "LLAMA_CPP_MODEL_PATH",
+    },
+    "litellm": {
+        "dir": "serving/litellm",
+        "container": "litellm",
+        "host_port": ("HOST_PORT", 18040),
+        "gpu": False,
+    },
+    "open-webui": {
+        "dir": "clients/open-webui",
+        "container": "open-webui",
+        "host_port": ("HOST_PORT", 18088),
+        "gpu": False,
+    },
+    "unsloth": {
+        "dir": "training/unsloth",
+        "container": "unsloth",
+        "host_port": None,
+        "gpu": True,
+        "all_gpus": True,
+    },
+    "prometheus": {
+        "dir": "observation",
+        "container": "prometheus",
+        "host_port": ("PROMETHEUS_HOST_PORT", 9090),
+        "gpu": False,
+    },
+    "grafana": {
+        "dir": "observation",
+        "container": "grafana",
+        "host_port": ("GRAFANA_HOST_PORT", 3000),
+        "gpu": False,
+    },
+    "nvidia-gpu-exporter": {
+        "dir": "observation",
+        "container": "nvidia-gpu-exporter",
+        "host_port": ("GPU_EXPORTER_HOST_PORT", 9835),
+        "gpu": True,
+        "all_gpus": False,
+    },
+}
+
+FORMAT_TARGETS = {
+    "safetensors": {"vllm", "sglang", "mlx"},
+    "pytorch": {"vllm", "sglang", "mlx"},
+    "gguf": {"llama.cpp", "ollama"},
+}
+
+
+def run(*cmd: str) -> subprocess.CompletedProcess[str]:
+    try:
+        return subprocess.run(cmd, text=True, capture_output=True, check=False)
+    except FileNotFoundError as exc:
+        return subprocess.CompletedProcess(cmd, 127, "", str(exc))
+
+
+def load_env(service: str) -> dict[str, str]:
+    spec = SERVICES[service]
+    env: dict[str, str] = {}
+    for name in (".env.example", ".env"):
+        path = ROOT / spec["dir"] / name
+        if not path.exists():
+            continue
+        for raw in path.read_text().splitlines():
+            line = raw.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            env[key.strip()] = os.path.expandvars(value.strip().strip('"').strip("'"))
+    return env
+
+
+def container_state(name: str) -> str:
+    result = run("docker", "inspect", "--format={{.State.Status}}", name)
+    if result.returncode != 0:
+        return "missing"
+    return result.stdout.strip() or "unknown"
+
+
+def container_health(name: str) -> str:
+    result = run("docker", "inspect", "--format={{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}", name)
+    if result.returncode != 0:
+        return "missing"
+    return result.stdout.strip() or "unknown"
+
+
+def gpu_count() -> int | None:
+    result = run("nvidia-smi", "-L")
+    if result.returncode != 0:
+        return None
+    return len([line for line in result.stdout.splitlines() if line.startswith("GPU ")])
+
+
+def port_open(port: int) -> bool:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.settimeout(0.2)
+        return sock.connect_ex(("127.0.0.1", port)) == 0
+
+
+def registry_models() -> list[dict[str, object]]:
+    try:
+        from ruamel.yaml import YAML
+    except ImportError:
+        return []
+    path = ROOT / "models" / "registry.yaml"
+    if not path.exists():
+        return []
+    with path.open() as handle:
+        data = YAML().load(handle) or {}
+    return data.get("models", []) or []
+
+
+def targets_for(model: dict[str, object]) -> list[str]:
+    targets = model.get("serving_targets")
+    if isinstance(targets, list):
+        return [str(target) for target in targets]
+    target = model.get("serving_target")
+    return [str(target)] if target else []
+
+
+def find_model_by_container_path(path: str) -> dict[str, object] | None:
+    if not path.startswith("/models/"):
+        return None
+    selected = path.removeprefix("/models/").split("/", 1)[0]
+    for model in registry_models():
+        model_path = str(model.get("path", ""))
+        if Path(model_path).name == selected:
+            return model
+    return None
+
+
+def host_model_path(service: str, container_path: str) -> Path | None:
+    if not container_path.startswith("/models/"):
+        return None
+    env = load_env(service)
+    local_root = env.get("MODEL_LOCAL_PATH", "../../models")
+    root_path = (ROOT / SERVICES[service]["dir"] / local_root).resolve()
+    return root_path / container_path.removeprefix("/models/")
+
+
+def check_model_compatibility(service: str, failures: list[str], warnings: list[str]) -> None:
+    model_key = SERVICES[service].get("model_key")
+    if not model_key:
+        return
+    env = load_env(service)
+    model_path = env.get(str(model_key), "")
+    if not model_path:
+        warnings.append(f"{service}: no {model_key} configured")
+        return
+    host_path = host_model_path(service, model_path)
+    if host_path is not None and not host_path.exists():
+        failures.append(f"{service}: configured model path does not exist on host: {host_path}")
+        return
+    model = find_model_by_container_path(model_path)
+    if not model:
+        if service == "llama.cpp" and model_path.endswith(".gguf"):
+            return
+        warnings.append(f"{service}: {model_path} is not registered in models/registry.yaml")
+        return
+    model_id = str(model.get("id", "?"))
+    fmt = str(model.get("format", ""))
+    allowed = FORMAT_TARGETS.get(fmt, set())
+    targets = set(targets_for(model))
+    if service not in targets:
+        failures.append(f"{service}: model {model_id} is not targeted for this runtime")
+    if service not in allowed:
+        failures.append(f"{service}: model {model_id} format {fmt!r} is not compatible with this runtime")
+
+
+def check_ports(service: str, failures: list[str], warnings: list[str]) -> None:
+    port_spec = SERVICES[service].get("host_port")
+    if not port_spec:
+        return
+    key, default = port_spec
+    env = load_env(service)
+    port = int(env.get(key, default))
+    container = str(SERVICES[service]["container"])
+    if port_open(port) and container_state(container) != "running":
+        failures.append(f"{service}: host port {port} is already in use before {container} is running")
+    elif port_open(port):
+        warnings.append(f"{service}: host port {port} is already open by running container {container}")
+
+
+def check_gpu_policy(target: str | None, failures: list[str], warnings: list[str]) -> None:
+    gpu_services = {name: spec for name, spec in SERVICES.items() if spec.get("gpu")}
+    target_gpu = bool(target and SERVICES[target].get("gpu"))
+    count = gpu_count()
+
+    if target_gpu and count is None and os.environ.get("LLM_LOCAL_SKIP_GPU_CHECK") != "1":
+        failures.append(
+            f"{target}: nvidia-smi is unavailable; set LLM_LOCAL_SKIP_GPU_CHECK=1 only if Docker GPU access is known-good"
+        )
+    elif count == 0 and target_gpu:
+        failures.append(f"{target}: no NVIDIA GPU detected")
+
+    running = [
+        name
+        for name, spec in gpu_services.items()
+        if container_state(str(spec["container"])) == "running"
+    ]
+    running_without_target = [name for name in running if name != target]
+    all_gpu_running = [name for name in running_without_target if gpu_services[name].get("all_gpus")]
+
+    if target_gpu and all_gpu_running:
+        failures.append(
+            f"{target}: {', '.join(all_gpu_running)} already claims all GPUs; stop it first per decision 0005"
+        )
+    if target and SERVICES[target].get("all_gpus") and running_without_target:
+        failures.append(
+            f"{target}: it claims all GPUs and cannot start while {', '.join(running_without_target)} is running"
+        )
+    if count == 1 and target_gpu and running_without_target:
+        failures.append(
+            f"{target}: single-GPU host already has GPU runtime(s) running: {', '.join(running_without_target)}"
+        )
+    if count and count > 1 and len(running) > count:
+        warnings.append(f"running GPU service count ({len(running)}) exceeds detected GPU count ({count})")
+
+
+def check_health(warnings: list[str]) -> None:
+    for service, spec in SERVICES.items():
+        container = str(spec["container"])
+        state = container_state(container)
+        if state == "missing":
+            continue
+        health = container_health(container)
+        if health not in {"running", "healthy"}:
+            warnings.append(f"{service}: container {container} health/state is {health}")
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Run LLM-Local startup guardrails")
+    parser.add_argument("service", nargs="?", choices=sorted(SERVICES), help="service being started")
+    parser.add_argument("--all", action="store_true", help="check all known service ports and model configs")
+    args = parser.parse_args()
+
+    services = sorted(SERVICES) if args.all else ([args.service] if args.service else [])
+    failures: list[str] = []
+    warnings: list[str] = []
+
+    for service in services:
+        check_ports(service, failures, warnings)
+        check_model_compatibility(service, failures, warnings)
+    check_gpu_policy(args.service, failures, warnings)
+    check_health(warnings)
+
+    print("=== Guardrails ===")
+    for warning in warnings:
+        print(f"  WARN: {warning}")
+    for failure in failures:
+        print(f"  FAIL: {failure}")
+    if failures:
+        return 1
+    print("  OK")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -16,11 +16,18 @@ Commands:
   model select <id> [--runtime RT] [--restart]   Select model for runtime (default: vllm)
   model rm <model-id> [--force]               Remove model and update registry
   model validate                              Validate registry paths
+  preset list                                 List serving presets
+  preset show <id>                            Show a serving preset
+  preset apply <id> [--restart] [--pull] [--render] [--dry-run]  Set active serving preset
+  preset active                               Show active serving preset state
+  config render [--dry-run]                   Render active preset into runtime .env files
   eval run [--target ollama|vllm|sglang|llama.cpp|mlx|litellm] [--model NAME] [--num-requests N] [--prompt TEXT] [--api-key KEY]
   eval quality                                Run lm-eval harness
   serve <ollama|vllm|sglang|llama.cpp|mlx|litellm> [up|down]  Manage serving
+  webui [up|down]                             Manage Open WebUI client
   train [up|down]                            Manage training
   observe [up|down|batch]                    Manage observability
+  guardrails [service|--all]                 Run startup guardrails
   status                                     Show service and model status
   smoke [--runtime]                           Run regression smoke test
   help                                       Show this help
@@ -103,6 +110,19 @@ case "${1:-}" in
       validate) "$PYTHON" "$ROOT/models/validate_registry.py" ;;
       *) usage; exit 1 ;;
     esac ;;
+  preset)
+    case "${2:-}" in
+      list)  "$PYTHON" "$ROOT/models/presets.py" list ;;
+      show)  shift 2; "$PYTHON" "$ROOT/models/presets.py" show "$@" ;;
+      apply) shift 2; "$PYTHON" "$ROOT/models/presets.py" apply "$@" ;;
+      active) "$PYTHON" "$ROOT/models/presets.py" active ;;
+      *) usage; exit 1 ;;
+    esac ;;
+  config)
+    case "${2:-}" in
+      render) shift 2; "$PYTHON" "$ROOT/models/presets.py" render "$@" ;;
+      *) usage; exit 1 ;;
+    esac ;;
   eval)
     case "${2:-}" in
       run)     shift 2; eval_run "$@" ;;
@@ -115,7 +135,8 @@ case "${1:-}" in
       ollama|vllm|sglang|llama.cpp|litellm) ;;
       mlx)
         case "$action" in
-          up) "$ROOT/serving/mlx/serve.sh" ;;
+          up) "$PYTHON" "$ROOT/scripts/preflight.py" mlx
+              "$ROOT/serving/mlx/serve.sh" ;;
           down) echo "MLX server runs in the foreground; stop its terminal process." ;;
           *) echo "ERROR: serve action must be up or down"; exit 1 ;;
         esac
@@ -125,14 +146,25 @@ case "${1:-}" in
     esac
     case "$action" in
       up)   docker network create llm-net 2>/dev/null || true
+            "$PYTHON" "$ROOT/scripts/preflight.py" "$svc"
             cd "$ROOT/serving/$svc" && docker compose up -d ;;
       down) cd "$ROOT/serving/$svc" && docker compose down ;;
       *) echo "ERROR: serve action must be up or down"; exit 1 ;;
+    esac ;;
+  webui)
+    action="${2:-up}"
+    case "$action" in
+      up)   docker network create llm-net 2>/dev/null || true
+            "$PYTHON" "$ROOT/scripts/preflight.py" open-webui
+            cd "$ROOT/clients/open-webui" && docker compose up -d ;;
+      down) cd "$ROOT/clients/open-webui" && docker compose down ;;
+      *) echo "ERROR: webui action must be up or down"; exit 1 ;;
     esac ;;
   train)
     action="${2:-up}"
     case "$action" in
       up)   docker network create llm-net 2>/dev/null || true
+            "$PYTHON" "$ROOT/scripts/preflight.py" unsloth
             cd "$ROOT/training/unsloth" && docker compose up -d ;;
       down) cd "$ROOT/training/unsloth" && docker compose down ;;
       *) echo "ERROR: train action must be up or down"; exit 1 ;;
@@ -145,16 +177,23 @@ case "${1:-}" in
       batch) cd "$ROOT/observation" && docker compose --profile batch run --rm observation ;;
       *) usage; exit 1 ;;
     esac ;;
+  guardrails)
+    shift
+    "$PYTHON" "$ROOT/scripts/preflight.py" "$@"
+    ;;
   status)
     echo "=== Services ==="
-    for svc in ollama vllm sglang llama-cpp litellm; do
+    for svc in ollama vllm sglang llama-cpp litellm open-webui; do
       state=$(docker inspect --format='{{.State.Health.Status}}' "$svc" 2>/dev/null || echo "not running")
       printf "  %-12s %s\n" "$svc" "$state"
     done
-    echo ""
-    echo "=== Models ==="
-    "$PYTHON" "$ROOT/models/manage.py" list
-    ;;
+	    echo ""
+	    echo "=== Models ==="
+	    "$PYTHON" "$ROOT/models/manage.py" list
+	    echo ""
+	    echo "=== Active Preset ==="
+	    "$PYTHON" "$ROOT/models/presets.py" active 2>/dev/null || echo "  not set"
+	    ;;
   smoke) shift; "$ROOT/scripts/smoke.sh" "$@" ;;
   help|--help|-h|"") usage ;;
   *) echo "Unknown command: $1"; usage; exit 1 ;;

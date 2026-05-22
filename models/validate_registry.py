@@ -8,6 +8,11 @@ yaml = YAML()
 
 FORMAT_GLOBS = {"safetensors": ".safetensors", "gguf": ".gguf", "pytorch": ".bin"}
 VALID_TARGETS = {"vllm", "sglang", "llama.cpp", "ollama", "mlx"}
+FORMAT_TARGETS = {
+    "safetensors": {"vllm", "sglang", "mlx"},
+    "pytorch": {"vllm", "sglang", "mlx"},
+    "gguf": {"llama.cpp", "ollama"},
+}
 
 
 def model_targets(model):
@@ -52,6 +57,17 @@ def validate(registry_path):
         unknown_targets = [target for target in model_targets(m) if target not in VALID_TARGETS]
         if unknown_targets:
             print(f"WARN: invalid target(s): {', '.join(unknown_targets)}")
+            errors += 1
+            continue
+
+        compatible_targets = FORMAT_TARGETS.get(fmt)
+        incompatible_targets = [
+            target for target in model_targets(m)
+            if compatible_targets is not None and target not in compatible_targets
+        ]
+        if incompatible_targets:
+            allowed = ", ".join(sorted(compatible_targets))
+            print(f"WARN: {fmt} incompatible with target(s): {', '.join(incompatible_targets)}; allowed: {allowed}")
             errors += 1
             continue
 

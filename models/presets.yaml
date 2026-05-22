@@ -1,0 +1,49 @@
+# Serving Presets are workflow-level model/runtime bindings.
+# They intentionally do not use the word "profile" because this repo already
+# uses Docker Compose profiles for gpu, batch, and quality services.
+
+presets:
+  - id: chat-small
+    description: Small Ollama chat model for the default local UI/gateway path.
+    runtime: ollama
+    model:
+      type: ollama
+      name: qwen2.5:0.5b
+    gateway:
+      alias: local-ollama
+      provider: ollama_chat
+      model: qwen2.5:0.5b
+    requires:
+      - ollama
+      - litellm
+    optional:
+      - open-webui
+    setup_hint: docker exec ollama ollama pull qwen2.5:0.5b
+
+  - id: glm-ocr-vllm
+    description: GLM-OCR through vLLM and the local-vllm LiteLLM alias.
+    runtime: vllm
+    model:
+      type: registry
+      id: GLM-OCR
+    gateway:
+      alias: local-vllm
+      provider: openai
+      model: THUDM/GLM-OCR-2B-1.1
+    requires:
+      - vllm
+      - litellm
+
+  - id: glm-ocr-sglang
+    description: GLM-OCR through SGLang and the local-sglang LiteLLM alias.
+    runtime: sglang
+    model:
+      type: registry
+      id: GLM-OCR
+    gateway:
+      alias: local-sglang
+      provider: openai
+      model: THUDM/GLM-OCR-2B-1.1
+    requires:
+      - sglang
+      - litellm

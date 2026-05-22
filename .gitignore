@@ -18,6 +18,7 @@ vendor/
 
 # Environment
 .env
+config/active/serving.yaml
 
 # OS
 .DS_Store

@@ -78,12 +78,13 @@ For direct Ollama requests, selection is the request model name:
 qwen2.5:0.5b
 ```
 
-For LiteLLM gateway requests, set the Ollama upstream model in
-`serving/litellm/.env`:
+For LiteLLM gateway requests, use the serving preset. This records the active
+workflow in `config/active/serving.yaml` and renders only the required model binding
+into `serving/litellm/.env`:
 
-```dotenv
-OLLAMA_API_BASE=http://ollama:11434
-OLLAMA_LITELLM_MODEL=ollama_chat/qwen2.5:0.5b
+```bash
+./llm-local preset apply chat-small
+./llm-local config render
 ```
 
 Then start LiteLLM:
@@ -254,7 +255,7 @@ Grafana:
 | `curl: (7) Failed to connect` | Service is not running or wrong host port | `docker ps --format '{{.Names}} {{.Ports}}'` |
 | `model not found` from Ollama | Model was not pulled | `docker exec ollama ollama pull qwen2.5:0.5b` |
 | LiteLLM returns `401` | Missing or wrong bearer token | Add `Authorization: Bearer ${LITELLM_MASTER_KEY:-sk-local-litellm}` |
-| LiteLLM returns upstream/model error | `OLLAMA_LITELLM_MODEL` does not match pulled model | Set `OLLAMA_LITELLM_MODEL=ollama_chat/qwen2.5:0.5b` and restart LiteLLM |
+| LiteLLM returns upstream/model error | Rendered LiteLLM model binding does not match pulled model | `./llm-local preset apply chat-small && ./llm-local config render && ./llm-local serve litellm up` |
 | Benchmark has `status=404` | Benchmark model name does not match target | Use `qwen2.5:0.5b` for `--target ollama`; use `local-ollama` for `--target litellm` |
 | Batch observation creates no useful report | No benchmark JSON exists | Run benchmark first and check `evaluation/results/` |
 | Prometheus target down for vLLM/SGLang/llama.cpp | Those runtimes are not part of this golden path | Ignore unless validating those runtimes |

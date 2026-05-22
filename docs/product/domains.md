@@ -14,6 +14,7 @@ Expose LLM inference endpoints on the local network.
 | llama.cpp | ghcr.io/ggml-org/llama.cpp | OpenAI-compatible | 18080 | 8080 | GPU 0 by default |
 | MLX-LM | mlx-lm host process | OpenAI-compatible | 18081 | 18081 | Apple Silicon Metal |
 | LiteLLM | docker.litellm.ai/berriai/litellm | OpenAI-compatible gateway | 18040 | 4000 | none |
+| Open WebUI | ghcr.io/open-webui/open-webui | Browser UI client | 18088 | 8080 | none |
 
 ### Contracts
 
@@ -25,6 +26,8 @@ Expose LLM inference endpoints on the local network.
 - LiteLLM exposes OpenAI-compatible `/v1/models` and `/v1/chat/completions`
   as a gateway to local runtimes. Stable aliases are `local-ollama`,
   `local-vllm`, `local-sglang`, `local-llama-cpp`, and `local-mlx`.
+- Open WebUI exposes a browser interface for interactive use and connects to
+  LiteLLM as its OpenAI-compatible provider at `http://litellm:4000/v1`.
 - Docker services join `llm-net` and are reachable by container name from other services.
 - Healthchecks defined: Ollama via `ollama list`, vLLM via curl `/health`, SGLang via curl `/health`.
 
@@ -38,6 +41,10 @@ Expose LLM inference endpoints on the local network.
 - LiteLLM: `.env` file controls host/container ports, proxy master key,
   upstream API base URLs, upstream API keys for OpenAI-compatible runtimes, and
   the model strings exposed behind the `local-*` aliases.
+- Open WebUI: `.env` file controls host/container ports, UI auth settings,
+  persistent secret key, and the LiteLLM OpenAI-compatible base URL/key. Direct
+  Ollama API integration is disabled by default so LiteLLM remains the client
+  gateway.
 - Host ports use the `18xxx` range by default to avoid common local service conflicts while keeping runtime/container ports unchanged.
 
 ---
@@ -134,6 +141,8 @@ Download, inventory, and convert model weights across services.
 | `models/registry.yaml` | YAML | — |
 | `models/assemble_registry.py` | Python 3 | ruamel.yaml |
 | `models/convert.sh` | Bash | git, llama.cpp, optional `convert` Python extra, ollama CLI |
+| `models/presets.yaml` | YAML | — |
+| `models/presets.py` | Python 3 | ruamel.yaml |
 | `models/validate_registry.py` | Python 3 | ruamel.yaml |
 
 ### Contracts
@@ -145,6 +154,14 @@ Download, inventory, and convert model weights across services.
 - Writes `models/<name>/model.yaml` sidecars and refreshes `registry.yaml` after successful downloads.
 - `registry.yaml` tracks all models: id, repo, format, size_gb, path, serving_target, serving_targets, quantizations, downloaded.
 - Default serving targets are inferred by format: safetensors/PyTorch targets vLLM and SGLang; GGUF targets llama.cpp and Ollama; MLX can be set explicitly with `--target mlx`.
+- Serving presets in `models/presets.yaml` bind a model, serving runtime, and
+  LiteLLM gateway alias for workflow-level switching.
+- `./llm-local preset apply <id>` writes generated local active state to
+  `config/active/serving.yaml`.
+- `./llm-local config render` updates runtime model `.env` values from the
+  active preset, including the matching LiteLLM model env var.
+- `./llm-local model select <id> --runtime <runtime>` remains the lower-level
+  power-user command for runtime-specific model selection.
 - `convert.sh hf2gguf <path>` converts HuggingFace weights to GGUF via llama.cpp `convert_hf_to_gguf.py`; llama.cpp is shallow-cloned into `vendor/llama.cpp` on first use.
 - `convert.sh gguf2ollama <path>` imports GGUF into Ollama via `ollama create` with generated Modelfile.
 - `validate_registry.py` checks all registry entries have valid paths and expected files.

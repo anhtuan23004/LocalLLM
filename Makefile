@@ -1,11 +1,13 @@
 .PHONY: network ollama-up ollama-down vllm-up vllm-down \
        sglang-up sglang-down llama-cpp-up llama-cpp-down mlx-up \
        litellm-up litellm-down \
+       open-webui-up open-webui-down \
        train-up train-down \
        observe-up observe-down observe-batch \
+       preset-list preset-apply config-render \
        benchmark-ollama benchmark-vllm benchmark-litellm eval-quality \
        validate validate-compose validate-health validate-registry \
-       smoke down help
+       guardrails smoke down help
 
 N ?= 10
 PROMPT ?= Explain briefly what a neural network is.
@@ -48,6 +50,12 @@ litellm-up: ## Start LiteLLM gateway
 litellm-down:
 	./llm-local serve litellm down
 
+open-webui-up: ## Start Open WebUI client
+	./llm-local webui up
+
+open-webui-down:
+	./llm-local webui down
+
 # --- Training ---
 
 train-up: ## Start Unsloth training environment
@@ -66,6 +74,18 @@ observe-down:
 
 observe-batch: ## Generate batch report from benchmark results
 	./llm-local observe batch
+
+# --- Model Management ---
+
+preset-list: ## List serving presets
+	./llm-local preset list
+
+preset-apply: PRESET ?= chat-small
+preset-apply: ## Set active serving preset (PRESET=id)
+	./llm-local preset apply $(PRESET)
+
+config-render: ## Render active serving preset into runtime .env files
+	./llm-local config render
 
 # --- Evaluation ---
 
@@ -92,6 +112,7 @@ validate-compose: ## Verify all docker-compose configs are valid
 	docker compose -f serving/sglang/docker-compose.yml config >/dev/null
 	docker compose -f serving/llama.cpp/docker-compose.yml config >/dev/null
 	docker compose -f serving/litellm/docker-compose.yml config >/dev/null
+	docker compose -f clients/open-webui/docker-compose.yml config >/dev/null
 	docker compose -f training/unsloth/docker-compose.yml config >/dev/null
 	docker compose -f evaluation/docker-compose.yml config >/dev/null
 	docker compose -f observation/docker-compose.yml config >/dev/null
@@ -106,6 +127,9 @@ validate-registry: ## Check model registry paths
 
 validate: validate-compose validate-registry ## Run all validations
 
+guardrails: ## Check GPU policy, ports, service health, and model/runtime compatibility
+	./llm-local guardrails --all
+
 smoke: ## Run lightweight regression smoke test
 	./llm-local smoke
 
@@ -117,6 +141,7 @@ down: ## Stop all services
 	-./llm-local serve sglang down
 	-./llm-local serve llama.cpp down
 	-./llm-local serve litellm down
+	-./llm-local webui down
 	-./llm-local train down
 	-./llm-local observe down
 

@@ -85,8 +85,14 @@ RUNTIME_ENV_MAP = {
     },
 }
 
+FORMAT_TARGETS = {
+    "safetensors": {"vllm", "sglang", "mlx"},
+    "pytorch": {"vllm", "sglang", "mlx"},
+    "gguf": {"llama.cpp", "ollama"},
+}
 
-def select_model(model_id, runtime="vllm", restart=False):
+
+def resolve_model(model_id, runtime="vllm"):
     if runtime not in RUNTIME_ENV_MAP:
         print(f"ERROR: unknown runtime '{runtime}'. Choose from: {', '.join(RUNTIME_ENV_MAP)}")
         sys.exit(1)
@@ -101,6 +107,20 @@ def select_model(model_id, runtime="vllm", restart=False):
                 print(f"  {m['id']}")
         sys.exit(1)
 
+    compatible_targets = FORMAT_TARGETS.get(match.get("format", ""))
+    if compatible_targets is not None and runtime not in compatible_targets:
+        allowed = ", ".join(sorted(compatible_targets))
+        print(
+            f"ERROR: model '{model_id}' format '{match.get('format')}' "
+            f"is not compatible with {runtime}. Allowed runtime(s): {allowed}"
+        )
+        sys.exit(1)
+
+    return match
+
+
+def select_model(model_id, runtime="vllm", restart=False):
+    match = resolve_model(model_id, runtime=runtime)
     cfg = RUNTIME_ENV_MAP[runtime]
     env_dir = os.path.join(ROOT_DIR, cfg["dir"])
     env_file = os.path.join(env_dir, ".env")
