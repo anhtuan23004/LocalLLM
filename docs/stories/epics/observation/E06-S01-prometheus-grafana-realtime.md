@@ -26,7 +26,14 @@ pre-provisioned dashboard for LLM-Local.
   `llm-net`.
 - Grafana provisions a Prometheus datasource with UID `prometheus`.
 - Grafana loads `observation/grafana/dashboards/llm-local-overview.json`.
-- Prometheus config scrapes vLLM `/metrics` at `vllm:8000`.
+- Prometheus config scrapes vLLM `/metrics` at `vllm:8000`, SGLang
+  `/metrics` at `sglang:30000`, and llama.cpp `/metrics` at `llama-cpp:8080`.
+- Prometheus scrapes Ollama state metrics through `ollama-exporter:9101`.
+- The current Grafana dashboard visualizes GPU, vLLM, and Ollama state metrics;
+  SGLang and llama.cpp scrape targets are available in Prometheus but do not
+  yet have dashboard panels.
+- Ollama dashboard panels cover availability and model state, not per-request
+  latency or token throughput.
 - Host ports can be overridden with `GRAFANA_HOST_PORT`,
   `PROMETHEUS_HOST_PORT`, and `GPU_EXPORTER_HOST_PORT`.
 - `observation/.env.example` documents the observation environment contract;
@@ -74,7 +81,7 @@ $ docker compose -f observation/docker-compose.yml up -d prometheus grafana
 network llm-net declared as external, but could not be found
 
 $ cd observation && GRAFANA_HOST_PORT=13000 PROMETHEUS_HOST_PORT=19090 docker compose up -d prometheus grafana
-# starts prometheus and grafana when default ports 3000/9090 are occupied
+# starts prometheus and grafana when configured defaults are occupied
 
 $ curl -fsS http://localhost:19090/-/ready
 Prometheus Server is Ready.
@@ -93,5 +100,6 @@ $ curl -fsS -u admin:admin 'http://localhost:13000/api/search?query=LLM-Local'
 # returns dashboard uid "llm-local-overview"
 ```
 
-Prometheus target health for `vllm` and `nvidia-gpu-exporter` remains deferred
-until those services are running on `llm-net`.
+Prometheus target health for `vllm`, `sglang`, `llama-cpp`, `ollama-exporter`,
+and `nvidia-gpu-exporter` remains deferred until those services are running on
+`llm-net`.

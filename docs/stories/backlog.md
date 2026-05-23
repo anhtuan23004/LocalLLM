@@ -13,6 +13,7 @@ selected, not before.
 | E04-observation | Metrics aggregation and visualization from benchmark results | infra exists (real-time + batch), unvalidated |
 | E05-model-management | Model download, inventory, storage, and cross-service sharing | sliced, mostly implemented |
 | E06-real-time-observability | Prometheus, Grafana, and optional GPU metrics for live inference visibility | sliced |
+| E07-litellm-gateway | LiteLLM as one OpenAI-compatible gateway across local runtimes | sliced, E07-S01 through E07-S05 implemented |
 
 ## First Story Candidates
 
@@ -20,6 +21,7 @@ These are ready to slice into story packets when selected:
 
 - **E01-S01**: Validate Ollama starts, passes healthcheck, responds to chat completion. _(implemented — see `docs/stories/epics/serving/E01-S01-ollama-chat-completions.md`)_
 - **E01-S02**: Validate vLLM starts with .env config, serves the configured model, and passes healthcheck.
+- **E01-S03**: Add setup for SGLang, llama.cpp, MLX-LM, and non-conflicting host ports. _(implemented — see `docs/stories/epics/serving/E01-S03-serving-runtime-setup.md`)_
 - **E02-S01**: Validate Unsloth Jupyter accessible and can import unsloth. _(implemented — see `docs/stories/epics/training/E02-S01-unsloth-jupyter-gpu.md`)_
 - **E03-S01**: Run benchmark against Ollama, verify JSON output schema. _(implemented — see `docs/stories/epics/evaluation/E03-S01-benchmark-produces-valid-json.md`)_
 - **E03-S02**: Run lm-eval-harness smoke quality eval against vLLM/OpenAI-compatible endpoint.
@@ -29,9 +31,15 @@ These are ready to slice into story packets when selected:
 - **E05-S03**: Implement HF→GGUF conversion via llama.cpp. _(implemented — see `docs/stories/epics/model-management/E05-S03-hf-to-gguf.md`)_
 - **E05-S04**: Implement GGUF→Ollama model import. _(implemented — see `docs/stories/epics/model-management/E05-S04-gguf-to-ollama.md`)_
 - **E05-S05**: Validate registry paths and model availability. _(implemented — see `docs/stories/epics/model-management/E05-S05-registry-validation.md`)_
+- **E05-S06**: Add serving presets for workflow-level model/runtime switching. _(implemented — see `docs/stories/epics/model-management/E05-S06-serving-presets.md`)_
 - **E06-S01**: Add Prometheus + Grafana real-time observability with optional GPU exporter. _(implemented — see `docs/stories/epics/observation/E06-S01-prometheus-grafana-realtime.md`)_
 - **Cross-S01**: Validate all services reachable on llm-net from evaluation container. _(implemented — see `docs/stories/epics/cross/Cross-S01-llm-net-reachability.md`)_
 - **Cross-S02**: Add top-level Makefile orchestration shortcuts. _(implemented — see `docs/stories/epics/cross/Cross-S02-makefile-orchestration.md`)_
-- **Cross-S03**: Add GPU availability pre-check script.
+- **Cross-S03**: Add GPU availability pre-check script. _(implemented — see `docs/stories/epics/cross/Cross-S03-runtime-guardrails.md`)_
 - **Cross-S04**: Fix compose-contract drift for Unsloth Ollama reachability and vLLM healthcheck/env configuration. _(implemented — see `docs/stories/epics/cross/Cross-S04-compose-contract-drift.md`)_
 - **Cross-S05**: Add lightweight smoke regression guard. _(implemented — see `docs/stories/epics/cross/Cross-S05-smoke-regression-guard.md`)_
+- **E07-S01**: Add minimal LiteLLM gateway routing to Ollama. _(implemented — see `docs/stories/epics/serving/E07-S01-minimal-litellm-gateway.md`)_
+- **E07-S02**: Add LiteLLM aliases for vLLM, SGLang, llama.cpp, and MLX-LM. _(implemented — see `docs/stories/epics/serving/E07-S02-litellm-multi-runtime-routing.md`)_
+- **E07-S03**: Add evaluation target and Makefile benchmark path for LiteLLM. _(implemented — see `docs/stories/epics/evaluation/E07-S03-litellm-evaluation-target.md`)_
+- **E07-S04**: Scrape LiteLLM Prometheus metrics and add Grafana gateway panels. _(implemented — see `docs/stories/epics/observation/E07-S04-litellm-observability.md`)_
+- **E07-S05**: Add Open WebUI as a client of LiteLLM. _(implemented — see `docs/stories/epics/clients/E07-S05-open-webui-adapter.md`)_

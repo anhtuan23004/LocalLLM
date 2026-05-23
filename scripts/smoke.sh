@@ -17,13 +17,15 @@ Usage: ./scripts/smoke.sh [--runtime]
 Default checks:
   - Docker Compose config resolution
   - model registry and conversion script presence
+  - serving preset syntax and active-state render planning
   - shell syntax for repo scripts
   - Grafana dashboard JSON validity
   - Makefile help target
 
 Runtime checks with --runtime:
   - llm-net exists
-  - running Ollama/vLLM health
+  - startup guardrails for port conflicts, GPU contention, and model/runtime compatibility
+  - running service health
   - local inference and observability endpoints
 USAGE
 }
@@ -35,6 +37,17 @@ while [ $# -gt 0 ]; do
     *) echo "Unknown option: $1"; usage; exit 1 ;;
   esac
 done
+
+if [ -f observation/.env ]; then
+  while IFS='=' read -r key value; do
+    case "$key" in
+      ""|\#*) continue ;;
+    esac
+    if [ -z "${!key+x}" ]; then
+      export "$key=$value"
+    fi
+  done < observation/.env
+fi
 
 check() {
   local label="$1"; shift
@@ -52,19 +65,28 @@ check "serving/ollama" docker compose -f serving/ollama/docker-compose.yml confi
 check "serving/vllm" docker compose -f serving/vllm/docker-compose.yml config
 check "serving/sglang" docker compose -f serving/sglang/docker-compose.yml config
 check "serving/llama.cpp" docker compose -f serving/llama.cpp/docker-compose.yml config
+check "serving/litellm" docker compose -f serving/litellm/docker-compose.yml config
+check "clients/open-webui" docker compose -f clients/open-webui/docker-compose.yml config
 check "training/unsloth" docker compose -f training/unsloth/docker-compose.yml config
 check "evaluation" docker compose -f evaluation/docker-compose.yml config
 check "observation" docker compose -f observation/docker-compose.yml config
 
 echo "=== Model Registry ==="
 check "registry.yaml exists" test -f models/registry.yaml
+check "presets.yaml exists" test -f models/presets.yaml
 check "convert.sh executable" test -x models/convert.sh
-check "validate_registry.sh executable" test -x models/validate_registry.sh
-check "registry validates" ./models/validate_registry.sh
+check "validate_registry.py exists" test -f models/validate_registry.py
+check "registry validates" ./llm-local model validate
+check "serving presets list" ./llm-local preset list
+check "serving preset dry run" ./llm-local preset apply chat-small --dry-run --render
+check "serving preset add syntax" sh -c 'tmp=$(mktemp -d); cp models/presets.yaml "$tmp/presets.yaml"; LLM_LOCAL_PRESETS_FILE="$tmp/presets.yaml" ./llm-local preset add --from-ollama smoke-model:latest --alias local-ollama --id smoke-model >/dev/null; rm -rf "$tmp"'
 
 echo "=== Scripts ==="
 check "convert.sh syntax" bash -n models/convert.sh
-check "validate_registry.sh syntax" bash -n models/validate_registry.sh
+check "validate_registry.py syntax" uv run python -m py_compile models/validate_registry.py
+check "presets.py syntax" uv run python -m py_compile models/presets.py
+check "preflight.py syntax" uv run python -m py_compile scripts/preflight.py
+check "ollama_exporter.py syntax" uv run python -m py_compile observation/scripts/ollama_exporter.py
 check "run_lm_eval.sh syntax" sh -n evaluation/scripts/run_lm_eval.sh
 check "mlx serve.sh syntax" bash -n serving/mlx/serve.sh
 check "smoke.sh syntax" bash -n scripts/smoke.sh
@@ -76,20 +98,28 @@ echo "=== Makefile ==="
 check "make help" make help
 
 if [ "$RUNTIME" -eq 1 ]; then
+  echo "=== Runtime Guardrails ==="
+  check "guardrails pass" ./llm-local guardrails --all
+
   echo "=== Runtime Network ==="
   check "llm-net exists" docker network inspect llm-net
 
   echo "=== Serving Health ==="
   check "Ollama healthy" sh -c 'docker inspect --format="{{.State.Health.Status}}" ollama 2>/dev/null | grep -q healthy'
   check "vLLM healthy" sh -c 'docker inspect --format="{{.State.Health.Status}}" vllm 2>/dev/null | grep -q healthy'
+  check "SGLang healthy or absent" sh -c 'docker inspect sglang >/dev/null 2>&1 || exit 0; status=$(docker inspect --format="{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}" sglang); [ "$status" = healthy ] || [ "$status" = running ]'
+  check "llama.cpp healthy or absent" sh -c 'docker inspect llama-cpp >/dev/null 2>&1 || exit 0; status=$(docker inspect --format="{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}" llama-cpp); [ "$status" = healthy ] || [ "$status" = running ]'
+  check "LiteLLM healthy or absent" sh -c 'docker inspect litellm >/dev/null 2>&1 || exit 0; status=$(docker inspect --format="{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}" litellm); [ "$status" = healthy ] || [ "$status" = running ]'
 
   echo "=== Inference ==="
-  check "Ollama responds" curl -sf http://localhost:11434/api/tags
-  check "vLLM responds" curl -sf http://localhost:8000/health
+  check "Ollama responds" curl -sf "http://localhost:${OLLAMA_HOST_PORT:-18134}/api/tags"
+  check "vLLM responds" curl -sf "http://localhost:${VLLM_HOST_PORT:-18000}/health"
 
   echo "=== Observability ==="
   check "Prometheus up" curl -sf "http://localhost:${PROMETHEUS_HOST_PORT:-9090}/-/healthy"
   check "Grafana up" curl -sf "http://localhost:${GRAFANA_HOST_PORT:-3000}/api/health"
+  check "Open WebUI container up" sh -c 'docker inspect open-webui >/dev/null 2>&1 && status=$(docker inspect --format="{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}" open-webui); [ "$status" = healthy ] || [ "$status" = running ]'
+  check "Open WebUI responds" curl -sf "http://localhost:18088/health"
 else
   echo "=== Runtime Checks ==="
   echo "  skipped (run ./scripts/smoke.sh --runtime to check live services)"

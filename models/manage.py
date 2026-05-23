@@ -66,29 +66,82 @@ def rm_model(model_id, force=False):
     assemble(MODELS_DIR)
 
 
-def select_model(model_id, restart=False):
+RUNTIME_ENV_MAP = {
+    "vllm": {
+        "dir": "serving/vllm",
+        "keys": {"VLLM_MODEL_PATH": "/models/{name}", "VLLM_SERVED_MODEL_NAME": "{repo}"},
+    },
+    "sglang": {
+        "dir": "serving/sglang",
+        "keys": {"SGLANG_MODEL_PATH": "/models/{name}"},
+    },
+    "llama.cpp": {
+        "dir": "serving/llama.cpp",
+        "keys": {"LLAMA_CPP_MODEL_PATH": "/models/{name}"},
+    },
+    "mlx": {
+        "dir": "serving/mlx",
+        "keys": {"MLX_MODEL": "{path}"},
+    },
+}
+
+FORMAT_TARGETS = {
+    "safetensors": {"vllm", "sglang", "mlx"},
+    "pytorch": {"vllm", "sglang", "mlx"},
+    "gguf": {"llama.cpp", "ollama"},
+}
+
+
+def resolve_model(model_id, runtime="vllm"):
+    if runtime not in RUNTIME_ENV_MAP:
+        print(f"ERROR: unknown runtime '{runtime}'. Choose from: {', '.join(RUNTIME_ENV_MAP)}")
+        sys.exit(1)
+
     models = load_registry()
-    match = next((m for m in models if m["id"] == model_id and has_target(m, "vllm")), None)
+    match = next((m for m in models if m["id"] == model_id and has_target(m, runtime)), None)
     if not match:
-        print(f"Model '{model_id}' not found or not targeted for vllm.")
+        print(f"Model '{model_id}' not found or not targeted for {runtime}.")
         print("Available:")
         for m in models:
-            if has_target(m, "vllm"):
+            if has_target(m, runtime):
                 print(f"  {m['id']}")
         sys.exit(1)
 
-    env_file = os.path.join(ROOT_DIR, "serving", "vllm", ".env")
-    if not os.path.isfile(env_file):
-        print(f"[!] {env_file} not found. Copy .env.example first.")
+    compatible_targets = FORMAT_TARGETS.get(match.get("format", ""))
+    if compatible_targets is not None and runtime not in compatible_targets:
+        allowed = ", ".join(sorted(compatible_targets))
+        print(
+            f"ERROR: model '{model_id}' format '{match.get('format')}' "
+            f"is not compatible with {runtime}. Allowed runtime(s): {allowed}"
+        )
         sys.exit(1)
+
+    return match
+
+
+def select_model(model_id, runtime="vllm", restart=False):
+    match = resolve_model(model_id, runtime=runtime)
+    cfg = RUNTIME_ENV_MAP[runtime]
+    env_dir = os.path.join(ROOT_DIR, cfg["dir"])
+    env_file = os.path.join(env_dir, ".env")
+
+    # Create .env from .env.example if missing
+    if not os.path.isfile(env_file):
+        example = os.path.join(env_dir, ".env.example")
+        if os.path.isfile(example):
+            import shutil as _shutil
+            _shutil.copy2(example, env_file)
+        else:
+            print(f"[!] {env_file} not found.")
+            sys.exit(1)
 
     with open(env_file) as f:
         lines = f.readlines()
 
-    container_path = "/models/" + os.path.basename(match["path"])
+    name = os.path.basename(match["path"])
     replacements = {
-        "VLLM_MODEL_PATH": container_path,
-        "VLLM_SERVED_MODEL_NAME": match["repo"],
+        k: v.format(name=name, repo=match["repo"], path=match["path"])
+        for k, v in cfg["keys"].items()
     }
 
     new_lines = []
@@ -101,11 +154,14 @@ def select_model(model_id, restart=False):
 
     with open(env_file, "w") as f:
         f.writelines(new_lines)
-    print(f"[+] Selected {match['id']} ({match['repo']})")
+    print(f"[+] Selected {match['id']} for {runtime}")
 
     if restart:
         import subprocess
-        subprocess.run(["docker", "compose", "up", "-d"], cwd=os.path.join(ROOT_DIR, "serving", "vllm"))
+        if runtime == "mlx":
+            print("[*] MLX runs on host — restart manually.")
+        else:
+            subprocess.run(["docker", "compose", "up", "-d"], cwd=env_dir)
 
 
 if __name__ == "__main__":
@@ -124,10 +180,15 @@ if __name__ == "__main__":
         rm_model(sys.argv[2], force=force)
     elif cmd == "select":
         if len(sys.argv) < 3:
-            print("Usage: manage.py select <model_id> [--restart]")
+            print("Usage: manage.py select <model_id> [--runtime RUNTIME] [--restart]")
             sys.exit(1)
         restart = "--restart" in sys.argv
-        select_model(sys.argv[2], restart=restart)
+        runtime = "vllm"
+        if "--runtime" in sys.argv:
+            idx = sys.argv.index("--runtime")
+            if idx + 1 < len(sys.argv):
+                runtime = sys.argv[idx + 1]
+        select_model(sys.argv[2], runtime=runtime, restart=restart)
     else:
         print(f"Unknown command: {cmd}")
         sys.exit(1)

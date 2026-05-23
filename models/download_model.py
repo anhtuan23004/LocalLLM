@@ -105,7 +105,15 @@ if __name__ == "__main__":
 
     result = download_model(args.model_id, final_dir, args.token)
     if result:
-        write_sidecar(args.model_id, final_dir, args.target)
+        entry = write_sidecar(args.model_id, final_dir, args.target)
         sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
         from assemble_registry import assemble
         assemble(args.dir)
+        runtime = entry["serving_targets"][0]
+        print()
+        print("Suggested preset:")
+        print(
+            f"./llm-local preset add --from-model {entry['id']} "
+            f"--runtime {runtime} --alias local-{runtime.replace('.', '-')} "
+            f"--id {runtime.replace('.', '-')}-{entry['id'].lower()}"
+        )

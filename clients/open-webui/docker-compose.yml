@@ -1,0 +1,26 @@
+services:
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:${OPEN_WEBUI_IMAGE_TAG:-main}
+    container_name: open-webui
+    environment:
+      WEBUI_NAME: ${WEBUI_NAME:-LLM-Local}
+      WEBUI_AUTH: "${WEBUI_AUTH:-true}"
+      WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY:-sk-local-open-webui}
+      ENABLE_OLLAMA_API: "${ENABLE_OLLAMA_API:-false}"
+      ENABLE_OPENAI_API: "${ENABLE_OPENAI_API:-true}"
+      OPENAI_API_BASE_URL: ${OPENAI_API_BASE_URL:-http://litellm:4000/v1}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-sk-local-litellm}
+    ports:
+      - "${HOST_PORT:-18088}:${CONTAINER_PORT:-8080}"
+    volumes:
+      - open_webui_data:/app/backend/data
+    networks:
+      - llm-net
+    restart: unless-stopped
+
+volumes:
+  open_webui_data:
+
+networks:
+  llm-net:
+    external: true

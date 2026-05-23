@@ -3,7 +3,7 @@ services:
     image: ghcr.io/ggml-org/llama.cpp:${LLAMA_CPP_IMAGE_TAG:-server-cuda}
     container_name: llama-cpp
     ports:
-      - "${HOST_PORT:-8080}:${CONTAINER_PORT:-8080}"
+      - "${HOST_PORT:-18080}:${CONTAINER_PORT:-8080}"
     volumes:
       - ${MODEL_LOCAL_PATH:-../../models}:/models
     environment:

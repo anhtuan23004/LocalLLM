@@ -22,6 +22,7 @@ evidence exist.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | E01-S01 | Ollama serves chat completions on llm-net | no | yes | no | no | implemented | docs/stories/epics/serving/E01-S01-ollama-chat-completions.md |
 | E01-S02 | vLLM serves configured model through OpenAI-compatible API | no | no | no | no | planned | none |
+| E01-S03 | Serving runtime setup exists for SGLang, llama.cpp, MLX-LM, and non-conflicting host ports | yes | yes | no | no | implemented | docs/stories/epics/serving/E01-S03-serving-runtime-setup.md |
 | E02-S01 | Unsloth Jupyter accessible with GPU | no | yes | no | yes | implemented | docs/stories/epics/training/E02-S01-unsloth-jupyter-gpu.md |
 | E03-S01 | Benchmark produces valid JSON with latency stats | no | yes | no | no | implemented | docs/stories/epics/evaluation/E03-S01-benchmark-produces-valid-json.md |
 | E03-S02 | lm-eval-harness quality eval service is configured for OpenAI-compatible endpoint | no | yes | no | no | implemented | docs/stories/epics/evaluation/E03-S02-lm-eval-harness-quality.md |
@@ -31,9 +32,16 @@ evidence exist.
 | E05-S03 | HF weights convert to GGUF through llama.cpp entrypoint | yes | no | no | no | implemented | docs/stories/epics/model-management/E05-S03-hf-to-gguf.md |
 | E05-S04 | GGUF files import into Ollama through generated Modelfile | yes | no | no | no | implemented | docs/stories/epics/model-management/E05-S04-gguf-to-ollama.md |
 | E05-S05 | Model registry validation checks paths and expected files | yes | yes | no | no | implemented | docs/stories/epics/model-management/E05-S05-registry-validation.md |
+| E05-S06 | Serving presets switch workflow-level model/runtime/LiteLLM alias configuration | yes | yes | no | no | implemented | docs/stories/epics/model-management/E05-S06-serving-presets.md |
 | E06-S01 | Prometheus + Grafana provide real-time inference and optional GPU dashboards | yes | yes | no | no | implemented | docs/stories/epics/observation/E06-S01-prometheus-grafana-realtime.md |
+| E07-S01 | LiteLLM gateway routes OpenAI-compatible requests to Ollama | no | yes | no | no | implemented | docs/stories/epics/serving/E07-S01-minimal-litellm-gateway.md |
+| E07-S02 | LiteLLM gateway exposes aliases for vLLM, SGLang, llama.cpp, and MLX-LM | no | yes | no | no | implemented | docs/stories/epics/serving/E07-S02-litellm-multi-runtime-routing.md |
+| E07-S03 | Evaluation can benchmark through LiteLLM with gateway auth | yes | yes | no | no | implemented | docs/stories/epics/evaluation/E07-S03-litellm-evaluation-target.md |
+| E07-S04 | Prometheus scrapes LiteLLM and Grafana shows gateway panels | yes | yes | no | no | implemented | docs/stories/epics/observation/E07-S04-litellm-observability.md |
+| E07-S05 | Open WebUI browser client connects to LiteLLM on llm-net | no | yes | no | no | implemented | docs/stories/epics/clients/E07-S05-open-webui-adapter.md |
 | Cross-S01 | All services reachable on llm-net | no | yes | no | yes | implemented | docs/stories/epics/cross/Cross-S01-llm-net-reachability.md |
 | Cross-S02 | Makefile orchestration targets work and compose configs validate | yes | yes | no | no | implemented | docs/stories/epics/cross/Cross-S02-makefile-orchestration.md |
+| Cross-S03 | Startup guardrails catch GPU contention, port conflicts, unhealthy services, and invalid model/runtime combinations early | yes | yes | no | yes | implemented | docs/stories/epics/cross/Cross-S03-runtime-guardrails.md |
 | Cross-S04 | Compose configuration matches product contracts | n/a | yes | no | no | implemented | docs/stories/epics/cross/Cross-S04-compose-contract-drift.md |
 | Cross-S05 | Smoke script guards compose, scripts, registry, and dashboard artifacts | yes | yes | no | no | implemented | docs/stories/epics/cross/Cross-S05-smoke-regression-guard.md |
 

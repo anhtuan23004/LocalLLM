@@ -2,8 +2,8 @@
 
 ## Discovery Answers (LLM-Local)
 
-- **Product surfaces**: CLI (docker compose commands), REST APIs (Ollama, vLLM OpenAI-compat), Jupyter Lab (training).
-- **Runtime stack**: Docker Compose, Python 3.11, NVIDIA CUDA GPU, vLLM, Ollama, Unsloth.
+- **Product surfaces**: CLI (`llm-local`, Makefile), REST APIs (Ollama, vLLM, SGLang, llama.cpp, MLX-LM OpenAI-compat, LiteLLM gateway), Open WebUI browser UI, Jupyter Lab (training), Grafana/Prometheus (observation).
+- **Runtime stack**: Docker Compose, Python 3.11, NVIDIA CUDA GPU, vLLM, SGLang, llama.cpp, Ollama, LiteLLM, Open WebUI, Unsloth, Prometheus, Grafana, and host-side MLX-LM on Apple Silicon.
 - **Core domains**: Serving, Training, Evaluation, Observation, Model Management.
 - **Boundary inputs**: CLI arguments (benchmark params, model download args), environment variables (.env files), HTTP API requests (OpenAI-compat), filesystem (model weights, benchmark JSON, CSV/PNG output).
 - **Validation ladder**: Docker healthchecks → benchmark JSON schema → metrics CSV + chart generation → cross-service network reachability.
@@ -16,15 +16,17 @@ Stack choices recorded in `docs/decisions/0004-docker-compose-shared-network.md`
 Host (NVIDIA GPU workstation)
 │
 ├── docker network: llm-net (external, bridge)
-│   ├── ollama          (serving/ollama)       :11434
-│   ├── vllm            (serving/vllm)         :8000
-│   ├── sglang          (serving/sglang)       :30000
-│   ├── llama-cpp       (serving/llama.cpp)    :8080
+│   ├── ollama          (serving/ollama)       host :18134 → container :11434
+│   ├── vllm            (serving/vllm)         host :18000 → container :8000
+│   ├── sglang          (serving/sglang)       host :18030 → container :30000
+│   ├── llama-cpp       (serving/llama.cpp)    host :18080 → container :8080
+│   ├── litellm         (serving/litellm)      host :18040 → container :4000
+│   ├── open-webui      (clients/open-webui)   host :18088 → container :8080
 │   ├── unsloth         (training/unsloth)     :8888, :8001, :2222
 │   ├── evaluation      (evaluation/)          run-once
 │   ├── observation     (observation/)         run-once (batch profile)
-│   ├── prometheus      (observation/)         :9090
-│   ├── grafana         (observation/)         :3000
+│   ├── prometheus      (observation/)         host $PROMETHEUS_HOST_PORT → container :9090
+│   ├── grafana         (observation/)         host $GRAFANA_HOST_PORT → container :3000
 │   └── nvidia-gpu-exporter (observation/)     :9835
 │
 ├── Bind mounts:
@@ -37,7 +39,7 @@ Host (NVIDIA GPU workstation)
     └── ollama_data     → ollama (/root/.ollama)
 
 Host-only Apple Silicon path:
-└── mlx_lm.server       (serving/mlx)          :8081
+└── mlx_lm.server       (serving/mlx)          :18081
 ```
 
 ## Default Layering (adapted)
@@ -47,7 +49,7 @@ LLM-Local is infrastructure-as-code, not a domain application. The relevant
 layers are:
 
 ```text
-Configuration (.env, docker-compose.yml)
+Configuration (.env, docker-compose.yml, config/active/serving.yaml)
   <- Services (Docker containers)
     <- Scripts (Python CLI tools)
       <- Shared Resources (models/, datasets/, results/)
@@ -64,6 +66,8 @@ Configuration (.env, docker-compose.yml)
 ## Parse-First Boundary Rule (adapted)
 
 - `.env` files parsed by Docker Compose before container start.
+- `config/active/serving.yaml` is generated from serving presets; `config render`
+  translates it into runtime `.env` model values.
 - CLI arguments parsed by argparse in Python scripts.
 - Benchmark results validated as JSON before observation consumes them.
 - Model paths validated by download script before writing.
@@ -72,10 +76,15 @@ Configuration (.env, docker-compose.yml)
 
 **Real-time** (always-on core, optional GPU profile):
 
-- Prometheus scrapes vLLM `/metrics` and, when `--profile gpu` is enabled,
-  nvidia-gpu-exporter every 15s.
-- Grafana dashboard: GPU utilization, VRAM, temperature, vLLM p95 latency, tokens/s, queue depth.
-- Ports: Grafana :3000, Prometheus :9090.
+- Prometheus scrapes vLLM, SGLang, llama.cpp, LiteLLM, Ollama state through
+  `ollama-exporter`, and, when `--profile gpu` is enabled, nvidia-gpu-exporter
+  every 15s.
+- Grafana dashboard: GPU utilization, VRAM, temperature, vLLM p95 latency,
+  tokens/s, queue depth, Ollama availability/model state, and LiteLLM gateway
+  request totals, failed request totals, token totals, and in-flight requests
+  when present. The current dashboard does not include SGLang runtime-specific
+  panels.
+- Default host ports are Grafana `3000` and Prometheus `9090`; `observation/.env` can override them with `GRAFANA_HOST_PORT` and `PROMETHEUS_HOST_PORT`.
 
 **Batch** (on-demand via `--profile batch`):
 

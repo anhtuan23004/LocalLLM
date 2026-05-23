@@ -6,8 +6,12 @@ from datetime import datetime
 import requests
 
 
-def run_benchmark(endpoint, model_name, num_requests, prompt):
+def run_benchmark(endpoint, model_name, num_requests, prompt, api_key=None):
     results = []
+    headers = {}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+
     for i in range(num_requests):
         payload = {
             "model": model_name,
@@ -15,7 +19,11 @@ def run_benchmark(endpoint, model_name, num_requests, prompt):
             "max_tokens": 128,
         }
         start = time.time()
-        resp = requests.post(f"{endpoint}/v1/chat/completions", json=payload)
+        resp = requests.post(
+            f"{endpoint}/v1/chat/completions",
+            json=payload,
+            headers=headers,
+        )
         latency = time.time() - start
         results.append({
             "request_id": i + 1,
@@ -50,6 +58,7 @@ if __name__ == "__main__":
     parser.add_argument("--model-name", required=True, help="Model name to benchmark")
     parser.add_argument("--num-requests", type=int, default=10, help="Number of requests to send")
     parser.add_argument("--prompt", default="Hello, how are you?", help="Prompt to send")
+    parser.add_argument("--api-key", default=None, help="Optional bearer token for OpenAI-compatible gateways")
     args = parser.parse_args()
 
-    run_benchmark(args.endpoint, args.model_name, args.num_requests, args.prompt)
+    run_benchmark(args.endpoint, args.model_name, args.num_requests, args.prompt, args.api_key)

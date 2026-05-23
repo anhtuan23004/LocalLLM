@@ -5,12 +5,46 @@
 #   ./convert.sh gguf2ollama <gguf-file> [--name model-name]
 #
 # Prerequisites:
-#   hf2gguf:    llama.cpp repo cloned (set LLAMA_CPP_DIR or default: ../llama.cpp)
+#   hf2gguf:    llama.cpp auto-cloned into vendor/llama.cpp on first use
+#               Python deps installed with: uv sync --extra convert
 #   gguf2ollama: ollama CLI installed and server running
 
 set -euo pipefail
 
-LLAMA_CPP_DIR="${LLAMA_CPP_DIR:-$(dirname "$0")/../llama.cpp}"
+LLAMA_CPP_DIR="${LLAMA_CPP_DIR:-$(dirname "$0")/../vendor/llama.cpp}"
+
+python_cmd() {
+  if [ -n "${PYTHON_BIN:-}" ]; then
+    printf '%s\n' "$PYTHON_BIN"
+  elif command -v uv >/dev/null 2>&1; then
+    printf '%s\n' "uv run python"
+  else
+    printf '%s\n' "python3"
+  fi
+}
+
+check_hf2gguf_python_deps() {
+  local python_bin="$1"
+  local missing
+
+  missing="$($python_bin - <<'PY'
+import importlib.util
+
+missing = [
+    module
+    for module in ("gguf", "torch")
+    if importlib.util.find_spec(module) is None
+]
+print(" ".join(missing))
+raise SystemExit(1 if missing else 0)
+PY
+)" || {
+    echo "ERROR: missing Python conversion dependencies: $missing"
+    echo "Install them with: uv sync --extra convert"
+    echo "Or set PYTHON_BIN to a Python environment that has: gguf torch"
+    exit 1
+  }
+}
 
 usage() {
   echo "Usage: $0 <hf2gguf|gguf2ollama> <path> [options]"
@@ -44,19 +78,51 @@ cmd_hf2gguf() {
     esac
   done
 
+  local python_bin
+  python_bin="$(python_cmd)"
+  check_hf2gguf_python_deps "$python_bin"
+
   local convert_script="$LLAMA_CPP_DIR/convert_hf_to_gguf.py"
   if [ ! -f "$convert_script" ]; then
-    echo "ERROR: $convert_script not found."
-    echo "Clone llama.cpp: git clone https://github.com/ggerganov/llama.cpp.git"
-    echo "Or set LLAMA_CPP_DIR to its location."
-    exit 1
+    echo "[*] llama.cpp not found. Cloning into $LLAMA_CPP_DIR (shallow)..."
+    git clone --depth 1 https://github.com/ggerganov/llama.cpp.git "$LLAMA_CPP_DIR"
   fi
 
   local outfile="${model_path}/$(basename "$model_path")-${outtype}.gguf"
 
   echo "[*] Converting: $model_path → $outfile (type: $outtype)"
-  python3 "$convert_script" "$model_path" --outtype "$outtype" --outfile "$outfile"
+  $python_bin "$convert_script" "$model_path" --outtype "$outtype" --outfile "$outfile"
   echo "[+] Output: $outfile"
+
+  # Update sidecar with quantization info
+  local sidecar="$model_path/model.yaml"
+  if [ -f "$sidecar" ]; then
+    local script_dir
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    local root_dir
+    root_dir="$(dirname "$script_dir")"
+    "$root_dir/.venv/bin/python" - "$sidecar" "$outtype" <<'PYEOF'
+import sys
+from ruamel.yaml import YAML
+yaml = YAML()
+yaml.default_flow_style = False
+sidecar_path, quant = sys.argv[1], sys.argv[2]
+with open(sidecar_path) as f:
+    data = yaml.load(f)
+quants = data.setdefault("quantizations", [])
+if quant not in quants:
+    quants.append(quant)
+# Add gguf targets if not present
+targets = data.setdefault("serving_targets", [])
+for t in ["llama.cpp", "ollama"]:
+    if t not in targets:
+        targets.append(t)
+data["serving_targets"] = targets
+with open(sidecar_path, "w") as f:
+    yaml.dump(data, f)
+print(f"[+] Updated sidecar: added quantization '{quant}', targets: {targets}")
+PYEOF
+  fi
 }
 
 cmd_gguf2ollama() {
@@ -102,10 +168,13 @@ cmd_gguf2ollama() {
   trap 'rm -f "$modelfile"' RETURN
   echo "FROM $gguf_file" > "$modelfile"
 
-  echo "[*] Creating Ollama model: $model_name from $gguf_file"
-  ollama create "$model_name" -f "$modelfile"
-  echo "[+] Model available: ollama run $model_name"
-}
+	  echo "[*] Creating Ollama model: $model_name from $gguf_file"
+	  ollama create "$model_name" -f "$modelfile"
+	  echo "[+] Model available: ollama run $model_name"
+	  echo ""
+	  echo "Suggested preset:"
+	  echo "./llm-local preset add --from-ollama $model_name --alias local-ollama --id chat-${model_name//[:.\/]/-}"
+	}
 
 # --- Main ---
 CMD="${1:-}"

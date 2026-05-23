@@ -1,0 +1,37 @@
+model_list:
+  - model_name: local-ollama
+    litellm_params:
+      model: os.environ/OLLAMA_LITELLM_MODEL
+      api_base: os.environ/OLLAMA_API_BASE
+
+  - model_name: local-vllm
+    litellm_params:
+      model: os.environ/VLLM_LITELLM_MODEL
+      api_base: os.environ/VLLM_API_BASE
+      api_key: os.environ/VLLM_API_KEY
+
+  - model_name: local-sglang
+    litellm_params:
+      model: os.environ/SGLANG_LITELLM_MODEL
+      api_base: os.environ/SGLANG_API_BASE
+      api_key: os.environ/SGLANG_API_KEY
+
+  - model_name: local-llama-cpp
+    litellm_params:
+      model: os.environ/LLAMA_CPP_LITELLM_MODEL
+      api_base: os.environ/LLAMA_CPP_API_BASE
+      api_key: os.environ/LLAMA_CPP_API_KEY
+
+  - model_name: local-mlx
+    litellm_params:
+      model: os.environ/MLX_LITELLM_MODEL
+      api_base: os.environ/MLX_API_BASE
+      api_key: os.environ/MLX_API_KEY
+
+litellm_settings:
+  callbacks:
+    - prometheus
+  require_auth_for_metrics_endpoint: false
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY

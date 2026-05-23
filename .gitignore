@@ -11,9 +11,14 @@ models/*/*
 __pycache__/
 *.py[cod]
 venv/
+.venv/
+
+# Vendor (auto-cloned on first convert)
+vendor/
 
 # Environment
 .env
+config/active/serving.yaml
 
 # OS
 .DS_Store

@@ -58,8 +58,72 @@
       "gridPos": {"h": 8, "w": 8, "x": 16, "y": 16},
       "targets": [{"expr": "vllm:num_requests_waiting", "legendFormat": "pending"}],
       "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 8,
+      "title": "Ollama Up",
+      "type": "stat",
+      "gridPos": {"h": 6, "w": 8, "x": 0, "y": 24},
+      "targets": [{"expr": "ollama_up", "legendFormat": "up"}],
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 9,
+      "title": "Ollama Models",
+      "type": "stat",
+      "gridPos": {"h": 6, "w": 8, "x": 8, "y": 24},
+      "targets": [{"expr": "ollama_models_total", "legendFormat": "available"}],
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 10,
+      "title": "Ollama Loaded Models",
+      "type": "stat",
+      "gridPos": {"h": 6, "w": 8, "x": 16, "y": 24},
+      "targets": [{"expr": "ollama_loaded_models_total", "legendFormat": "loaded"}],
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 11,
+      "title": "LiteLLM Total Requests",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 30},
+      "targets": [{"expr": "sum(litellm_proxy_total_requests_metric) or sum(litellm_proxy_total_requests_metric_total) or sum(litellm_requests_metric_total)", "legendFormat": "requests"}],
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 12,
+      "title": "LiteLLM Failed Requests",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 30},
+      "targets": [{"expr": "sum(litellm_proxy_failed_requests_metric) or sum(litellm_proxy_failed_requests_metric_total)", "legendFormat": "failed"}],
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 13,
+      "title": "LiteLLM In-Flight Requests",
+      "type": "stat",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 30},
+      "targets": [{"expr": "sum(litellm_in_flight_requests) or sum(litellm_inflight_requests_metric) or sum(litellm_in_flight_requests_metric)", "legendFormat": "in-flight"}],
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 14,
+      "title": "LiteLLM Input Tokens",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 38},
+      "targets": [{"expr": "sum(litellm_input_tokens_metric) or sum(litellm_input_tokens_metric_total)", "legendFormat": "input tokens"}],
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 15,
+      "title": "LiteLLM Output Tokens",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 38},
+      "targets": [{"expr": "sum(litellm_output_tokens_metric) or sum(litellm_output_tokens_metric_total)", "legendFormat": "output tokens"}],
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
     }
   ],
   "schemaVersion": 39,
-  "version": 1
+  "version": 2
 }

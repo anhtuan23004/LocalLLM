@@ -13,14 +13,25 @@ Commands:
   model download <repo-id> [--target TARGET] Download model from HuggingFace
   model convert <hf2gguf|gguf2ollama> <path>  Convert model format
   model list                                  List registered models
-  model select <id> [--restart]               Select vLLM model (+ optional restart)
+  model select <id> [--runtime RT] [--restart]   Select model for runtime (default: vllm)
   model rm <model-id> [--force]               Remove model and update registry
   model validate                              Validate registry paths
-  eval run [--target ollama|vllm] [--model NAME] [--num-requests N] [--prompt TEXT]
+  preset list                                 List serving presets
+  preset show <id>                            Show a serving preset
+  preset add (--from-model ID --runtime RT | --from-ollama NAME) [--alias ALIAS] [--id ID]
+  preset apply <id> [--restart] [--pull] [--render] [--dry-run]  Set active serving preset
+  preset active                               Show active serving preset state
+  ollama pull <model>                         Pull Ollama model and print preset suggestion
+  ollama list                                 List Ollama models and suggest missing presets
+  config render [--dry-run]                   Render active preset into runtime .env files
+  eval run [--target ollama|vllm|sglang|llama.cpp|mlx|litellm] [--model NAME] [--num-requests N] [--prompt TEXT] [--api-key KEY]
   eval quality                                Run lm-eval harness
-  serve <ollama|vllm|sglang|llama.cpp|mlx> [up|down]  Manage serving
+  serve <ollama|vllm|sglang|llama.cpp|mlx|litellm> [up|down]  Manage serving
+  webui [up|down]                             Manage Open WebUI client
   train [up|down]                            Manage training
   observe [up|down|batch]                    Manage observability
+  guardrails [service|--all]                 Run startup guardrails
+  status                                     Show service and model status
   smoke [--runtime]                           Run regression smoke test
   help                                       Show this help
 EOF
@@ -31,6 +42,7 @@ eval_run() {
   local model=""
   local num_requests=""
   local prompt=""
+  local api_key=""
 
   while [ $# -gt 0 ]; do
     case "$1" in
@@ -54,6 +66,11 @@ eval_run() {
         [ -n "$prompt" ] || { echo "ERROR: --prompt requires a value"; exit 1; }
         shift 2
         ;;
+      --api-key)
+        api_key="${2:-}"
+        [ -n "$api_key" ] || { echo "ERROR: --api-key requires a value"; exit 1; }
+        shift 2
+        ;;
       *)
         echo "Unknown eval run option: $1"
         usage
@@ -64,15 +81,23 @@ eval_run() {
 
   local endpoint
   case "$target" in
-    ollama) endpoint="http://ollama:11434" ;;
-    vllm)   endpoint="http://vllm:8000" ;;
-    *) echo "ERROR: --target must be ollama or vllm"; exit 1 ;;
+    ollama)   endpoint="http://ollama:11434" ;;
+    vllm)     endpoint="http://vllm:8000" ;;
+    sglang)   endpoint="http://sglang:30000" ;;
+    llama.cpp) endpoint="http://llama-cpp:8080" ;;
+    mlx)      endpoint="http://host.docker.internal:18081" ;;
+    litellm)  endpoint="http://litellm:4000" ;;
+    *) echo "ERROR: --target must be ollama, vllm, sglang, llama.cpp, mlx, or litellm"; exit 1 ;;
   esac
 
   local run_args=(--endpoint "$endpoint")
+  if [ "$target" = "litellm" ] && [ -z "$api_key" ]; then
+    api_key="${LITELLM_MASTER_KEY:-sk-local-litellm}"
+  fi
   [ -n "$model" ] && run_args+=(--model-name "$model")
   [ -n "$num_requests" ] && run_args+=(--num-requests "$num_requests")
   [ -n "$prompt" ] && run_args+=(--prompt "$prompt")
+  [ -n "$api_key" ] && run_args+=(--api-key "$api_key")
 
   cd "$ROOT/evaluation" && docker compose run --rm evaluation "${run_args[@]}"
 }
@@ -88,6 +113,41 @@ case "${1:-}" in
       validate) "$PYTHON" "$ROOT/models/validate_registry.py" ;;
       *) usage; exit 1 ;;
     esac ;;
+	  preset)
+	    case "${2:-}" in
+	      list)  "$PYTHON" "$ROOT/models/presets.py" list ;;
+	      show)  shift 2; "$PYTHON" "$ROOT/models/presets.py" show "$@" ;;
+	      add)   shift 2; "$PYTHON" "$ROOT/models/presets.py" add "$@" ;;
+	      apply) shift 2; "$PYTHON" "$ROOT/models/presets.py" apply "$@" ;;
+	      active) "$PYTHON" "$ROOT/models/presets.py" active ;;
+	      *) usage; exit 1 ;;
+	    esac ;;
+	  ollama)
+	    case "${2:-}" in
+	      pull)
+	        model="${3:-}"
+	        [ -n "$model" ] || { echo "ERROR: ollama pull requires a model name"; exit 1; }
+	        docker exec ollama ollama pull "$model"
+	        "$PYTHON" "$ROOT/models/presets.py" suggest-ollama "$model"
+	        ;;
+	      list)
+	        output="$(docker exec ollama ollama list)"
+	        printf '%s\n' "$output"
+	        models="$(printf '%s\n' "$output" | awk 'NR > 1 && $1 != "" {print $1}')"
+	        if [ -n "$models" ]; then
+	          # shellcheck disable=SC2086
+	          "$PYTHON" "$ROOT/models/presets.py" suggest-ollama-missing $models
+	        fi
+	        ;;
+	      *) usage; exit 1 ;;
+	    esac ;;
+	  # Direct docker exec usage is still supported outside this CLI, but the
+	  # wrapper above is what lets LLM-Local print preset suggestions.
+	  config)
+    case "${2:-}" in
+      render) shift 2; "$PYTHON" "$ROOT/models/presets.py" render "$@" ;;
+      *) usage; exit 1 ;;
+    esac ;;
   eval)
     case "${2:-}" in
       run)     shift 2; eval_run "$@" ;;
@@ -97,27 +157,39 @@ case "${1:-}" in
   serve)
     svc="${2:-ollama}"; action="${3:-up}"
     case "$svc" in
-      ollama|vllm|sglang|llama.cpp) ;;
+      ollama|vllm|sglang|llama.cpp|litellm) ;;
       mlx)
         case "$action" in
-          up) "$ROOT/serving/mlx/serve.sh" ;;
+          up) "$PYTHON" "$ROOT/scripts/preflight.py" mlx
+              "$ROOT/serving/mlx/serve.sh" ;;
           down) echo "MLX server runs in the foreground; stop its terminal process." ;;
           *) echo "ERROR: serve action must be up or down"; exit 1 ;;
         esac
         exit 0
         ;;
-      *) echo "ERROR: service must be ollama, vllm, sglang, llama.cpp, or mlx"; exit 1 ;;
+      *) echo "ERROR: service must be ollama, vllm, sglang, llama.cpp, mlx, or litellm"; exit 1 ;;
     esac
     case "$action" in
       up)   docker network create llm-net 2>/dev/null || true
+            "$PYTHON" "$ROOT/scripts/preflight.py" "$svc"
             cd "$ROOT/serving/$svc" && docker compose up -d ;;
       down) cd "$ROOT/serving/$svc" && docker compose down ;;
       *) echo "ERROR: serve action must be up or down"; exit 1 ;;
+    esac ;;
+  webui)
+    action="${2:-up}"
+    case "$action" in
+      up)   docker network create llm-net 2>/dev/null || true
+            "$PYTHON" "$ROOT/scripts/preflight.py" open-webui
+            cd "$ROOT/clients/open-webui" && docker compose up -d ;;
+      down) cd "$ROOT/clients/open-webui" && docker compose down ;;
+      *) echo "ERROR: webui action must be up or down"; exit 1 ;;
     esac ;;
   train)
     action="${2:-up}"
     case "$action" in
       up)   docker network create llm-net 2>/dev/null || true
+            "$PYTHON" "$ROOT/scripts/preflight.py" unsloth
             cd "$ROOT/training/unsloth" && docker compose up -d ;;
       down) cd "$ROOT/training/unsloth" && docker compose down ;;
       *) echo "ERROR: train action must be up or down"; exit 1 ;;
@@ -130,6 +202,23 @@ case "${1:-}" in
       batch) cd "$ROOT/observation" && docker compose --profile batch run --rm observation ;;
       *) usage; exit 1 ;;
     esac ;;
+  guardrails)
+    shift
+    "$PYTHON" "$ROOT/scripts/preflight.py" "$@"
+    ;;
+  status)
+    echo "=== Services ==="
+    for svc in ollama vllm sglang llama-cpp litellm open-webui; do
+      state=$(docker inspect --format='{{.State.Health.Status}}' "$svc" 2>/dev/null || echo "not running")
+      printf "  %-12s %s\n" "$svc" "$state"
+    done
+	    echo ""
+	    echo "=== Models ==="
+	    "$PYTHON" "$ROOT/models/manage.py" list
+	    echo ""
+	    echo "=== Active Preset ==="
+	    "$PYTHON" "$ROOT/models/presets.py" active 2>/dev/null || echo "  not set"
+	    ;;
   smoke) shift; "$ROOT/scripts/smoke.sh" "$@" ;;
   help|--help|-h|"") usage ;;
   *) echo "Unknown command: $1"; usage; exit 1 ;;
