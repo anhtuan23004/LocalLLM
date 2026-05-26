@@ -174,6 +174,6 @@ Download, inventory, and convert model weights across services.
 These gaps need story-backed fixes before the related contracts can be marked
 implemented:
 
-- _(none currently tracked — Cross-S04 resolved the prior compose-contract
-  drift items; see
-  `docs/stories/epics/cross/Cross-S04-compose-contract-drift.md`.)_
+- vLLM runtime proof remains planned. E01-S02 must record healthcheck and
+  OpenAI-compatible chat-completion evidence on a prepared CUDA host before the
+  vLLM serving contract can be marked implemented.

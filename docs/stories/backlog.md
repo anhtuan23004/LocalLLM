@@ -5,26 +5,40 @@ selected, not before.
 
 ## Candidate Epics
 
+Statuses in this table are refreshed manually from `docs/TEST_MATRIX.md`; when
+they disagree, the matrix is the source of truth.
+
 | Epic | Description | Status |
 | --- | --- | --- |
-| E01-serving | Model serving: Ollama general LLM + vLLM OpenAI-compatible inference | infra exists, unvalidated |
-| E02-training | Fine-tuning environment: Unsloth with Jupyter, GPU, shared models/datasets | infra exists, unvalidated |
-| E03-evaluation | Latency and quality benchmarking against serving endpoints via OpenAI-compat API | partially validated (E03-S02) |
-| E04-observation | Metrics aggregation and visualization from benchmark results | infra exists (real-time + batch), unvalidated |
-| E05-model-management | Model download, inventory, storage, and cross-service sharing | sliced, mostly implemented |
-| E06-real-time-observability | Prometheus, Grafana, and optional GPU metrics for live inference visibility | sliced |
-| E07-litellm-gateway | LiteLLM as one OpenAI-compatible gateway across local runtimes | sliced, E07-S01 through E07-S05 implemented |
+| E01-serving | Model serving: Ollama general LLM + vLLM OpenAI-compatible inference | partially implemented; E01-S02 remains planned and is next priority |
+| E02-training | Fine-tuning environment: Unsloth with Jupyter, GPU, shared models/datasets | implemented |
+| E03-evaluation | Latency and quality benchmarking against serving endpoints via OpenAI-compat API | implemented |
+| E04-observation | Metrics aggregation and visualization from benchmark results | implemented |
+| E05-model-management | Model download, inventory, storage, and cross-service sharing | implemented |
+| E06-real-time-observability | Prometheus, Grafana, and optional GPU metrics for live inference visibility | implemented |
+| E07-litellm-gateway | LiteLLM as one OpenAI-compatible gateway across local runtimes | implemented |
+
+## Next Selected Story
+
+1. **E01-S02**: Validate vLLM OpenAI-compatible serving.
+
+   Reason: vLLM is a core serving runtime. Later evaluation, observability,
+   LiteLLM routing, and client workflows depend on at least one validated
+   OpenAI-compatible backend beyond Ollama.
+
+   Story packet:
+   `docs/stories/epics/serving/E01-S02-vllm-openai-compatible-serving.md`
 
 ## First Story Candidates
 
 These are ready to slice into story packets when selected:
 
 - **E01-S01**: Validate Ollama starts, passes healthcheck, responds to chat completion. _(implemented — see `docs/stories/epics/serving/E01-S01-ollama-chat-completions.md`)_
-- **E01-S02**: Validate vLLM starts with .env config, serves the configured model, and passes healthcheck.
+- **E01-S02**: Validate vLLM starts with .env config, serves the configured model, and passes healthcheck. _(next priority — see `docs/stories/epics/serving/E01-S02-vllm-openai-compatible-serving.md`)_
 - **E01-S03**: Add setup for SGLang, llama.cpp, MLX-LM, and non-conflicting host ports. _(implemented — see `docs/stories/epics/serving/E01-S03-serving-runtime-setup.md`)_
 - **E02-S01**: Validate Unsloth Jupyter accessible and can import unsloth. _(implemented — see `docs/stories/epics/training/E02-S01-unsloth-jupyter-gpu.md`)_
 - **E03-S01**: Run benchmark against Ollama, verify JSON output schema. _(implemented — see `docs/stories/epics/evaluation/E03-S01-benchmark-produces-valid-json.md`)_
-- **E03-S02**: Run lm-eval-harness smoke quality eval against vLLM/OpenAI-compatible endpoint.
+- **E03-S02**: Run lm-eval-harness smoke quality eval against vLLM/OpenAI-compatible endpoint. _(implemented — see `docs/stories/epics/evaluation/E03-S02-lm-eval-harness-quality.md`)_
 - **E04-S01**: Run observation against existing results, verify CSV + chart output. _(implemented — see `docs/stories/epics/observation/E04-S01-observation-produces-csv-chart.md`)_
 - **E05-S01**: Download a small model, verify directory structure and file presence. _(implemented — see `docs/stories/epics/model-management/E05-S01-download-model.md`)_
 - **E05-S02**: Add model registry YAML and placeholder conversion commands. _(implemented — see `docs/stories/epics/model-management/E05-S02-model-registry.md`)_
