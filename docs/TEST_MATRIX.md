@@ -2,9 +2,9 @@
 
 This file maps product behavior to proof.
 
-LLM-Local behavior has been defined from the current repository, but proof has
-not been recorded yet. Do not mark a row implemented until tests or validation
-evidence exist.
+LLM-Local behavior has been defined from the current repository. Rows marked
+`implemented` must link to story packets with recorded validation evidence. Do
+not mark a row implemented until tests or validation evidence exist.
 
 ## Status Values
 
@@ -21,7 +21,7 @@ evidence exist.
 | Story | Contract | Unit | Integration | E2E | Platform | Status | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | E01-S01 | Ollama serves chat completions on llm-net | no | yes | no | no | implemented | docs/stories/epics/serving/E01-S01-ollama-chat-completions.md |
-| E01-S02 | vLLM serves configured model through OpenAI-compatible API | no | no | no | no | planned | none |
+| E01-S02 | vLLM serves configured model through OpenAI-compatible API | no | yes | no | yes | planned | none |
 | E01-S03 | Serving runtime setup exists for SGLang, llama.cpp, MLX-LM, and non-conflicting host ports | yes | yes | no | no | implemented | docs/stories/epics/serving/E01-S03-serving-runtime-setup.md |
 | E02-S01 | Unsloth Jupyter accessible with GPU | no | yes | no | yes | implemented | docs/stories/epics/training/E02-S01-unsloth-jupyter-gpu.md |
 | E03-S01 | Benchmark produces valid JSON with latency stats | no | yes | no | no | implemented | docs/stories/epics/evaluation/E03-S01-benchmark-produces-valid-json.md |

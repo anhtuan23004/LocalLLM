@@ -1,7 +1,7 @@
 # Agent Operating Guide
 
-This repository uses Harness v0. LLM-Local infrastructure now exists, but
-automated validation proof has not been recorded yet.
+This repository uses Harness v0. LLM-Local infrastructure now exists, and
+validation proof is tracked through story packets linked from the test matrix.
 
 The current job of agents is to preserve and grow the collaboration harness
 while changing LLM-Local infrastructure only through selected stories. Do not

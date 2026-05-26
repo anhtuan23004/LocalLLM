@@ -12,9 +12,9 @@ evaluation, observation, and model management. The harness is no longer empty:
 `docs/product/`, `docs/ARCHITECTURE.md`, `docs/stories/backlog.md`, and
 `docs/TEST_MATRIX.md` contain the current LLM-Local contract.
 
-Automated validation proof has not been recorded yet. Test matrix rows should
-stay `planned` until a story packet captures evidence from real commands,
-reports, logs, or screenshots.
+Validation proof is tracked per story. Test matrix rows marked `implemented`
+must point to story packets that capture evidence from real commands, reports,
+logs, or screenshots. Rows without recorded evidence should stay `planned`.
 
 ## Mental Model
 
