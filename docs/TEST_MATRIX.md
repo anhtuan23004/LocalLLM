@@ -2,9 +2,9 @@
 
 This file maps product behavior to proof.
 
-LLM-Local behavior has been defined from the current repository, but proof has
-not been recorded yet. Do not mark a row implemented until tests or validation
-evidence exist.
+LLM-Local behavior has been defined from the current repository. Rows marked
+`implemented` must link to story packets with recorded validation evidence. Do
+not mark a row implemented until tests or validation evidence exist.
 
 ## Status Values
 
