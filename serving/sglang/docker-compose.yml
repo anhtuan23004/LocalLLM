@@ -1,6 +1,6 @@
 services:
   sglang:
-    image: lmsysorg/sglang:${SGLANG_IMAGE_TAG:-latest}
+    image: lmsysorg/sglang:${SGLANG_IMAGE_TAG:-v0.5.12.post1}
     container_name: sglang
     entrypoint: python3 -m sglang.launch_server
     command: >

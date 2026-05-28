@@ -1,6 +1,6 @@
 services:
   unsloth:
-    image: unsloth/unsloth:latest
+    image: unsloth/unsloth:${UNSLOTH_IMAGE_TAG:-2026.5.7-pt2.10.0-vllm-0.16.0-cu12.8-studio-release-v0.1.41-beta-2026-MAY-24}
     container_name: unsloth
     restart: unless-stopped
     environment:
@@ -9,9 +9,9 @@ services:
       # JUPYTER_PORT: 8888
       OLLAMA_HOST: "http://ollama:11434"
     ports:
-      - "8888:8888"
-      - "8001:8000"
-      - "2222:22"
+      - "${JUPYTER_HOST_PORT:-8888}:8888"
+      - "${UNSLOTH_API_HOST_PORT:-8001}:8000"
+      - "${UNSLOTH_SSH_HOST_PORT:-2222}:22"
     volumes:
       - ./work:/workspace/work
       - ../../models:/workspace/models

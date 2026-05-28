@@ -12,90 +12,14 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-SERVICES = {
-    "ollama": {
-        "dir": "serving/ollama",
-        "container": "ollama",
-        "host_port": ("HOST_PORT", 18134),
-        "gpu": True,
-        "all_gpus": True,
-    },
-    "vllm": {
-        "dir": "serving/vllm",
-        "container": "vllm",
-        "host_port": ("HOST_PORT", 18000),
-        "gpu": True,
-        "all_gpus": False,
-        "model_key": "VLLM_MODEL_PATH",
-    },
-    "sglang": {
-        "dir": "serving/sglang",
-        "container": "sglang",
-        "host_port": ("HOST_PORT", 18030),
-        "gpu": True,
-        "all_gpus": False,
-        "model_key": "SGLANG_MODEL_PATH",
-    },
-    "llama.cpp": {
-        "dir": "serving/llama.cpp",
-        "container": "llama-cpp",
-        "host_port": ("HOST_PORT", 18080),
-        "gpu": True,
-        "all_gpus": False,
-        "model_key": "LLAMA_CPP_MODEL_PATH",
-    },
-    "litellm": {
-        "dir": "serving/litellm",
-        "container": "litellm",
-        "host_port": ("HOST_PORT", 18040),
-        "gpu": False,
-    },
-    "open-webui": {
-        "dir": "clients/open-webui",
-        "container": "open-webui",
-        "host_port": ("HOST_PORT", 18088),
-        "gpu": False,
-    },
-    "ocr-extract": {
-        "dir": "clients/ocr-extract",
-        "container": "ocr-extract",
-        "host_port": ("HOST_PORT", 18092),
-        "gpu": False,
-    },
-    "unsloth": {
-        "dir": "training/unsloth",
-        "container": "unsloth",
-        "host_port": None,
-        "gpu": True,
-        "all_gpus": True,
-    },
-    "prometheus": {
-        "dir": "observation",
-        "container": "prometheus",
-        "host_port": ("PROMETHEUS_HOST_PORT", 9090),
-        "gpu": False,
-    },
-    "grafana": {
-        "dir": "observation",
-        "container": "grafana",
-        "host_port": ("GRAFANA_HOST_PORT", 3000),
-        "gpu": False,
-    },
-    "nvidia-gpu-exporter": {
-        "dir": "observation",
-        "container": "nvidia-gpu-exporter",
-        "host_port": ("GPU_EXPORTER_HOST_PORT", 9835),
-        "gpu": True,
-        "all_gpus": False,
-    },
-}
+from llm_local.catalog import format_targets, preflight_services
 
-FORMAT_TARGETS = {
-    "safetensors": {"vllm", "sglang", "mlx"},
-    "pytorch": {"vllm", "sglang", "mlx"},
-    "gguf": {"llama.cpp", "ollama"},
-}
+
+SERVICES = preflight_services()
+FORMAT_TARGETS = format_targets()
 
 
 def run(*cmd: str) -> subprocess.CompletedProcess[str]:
@@ -252,8 +176,10 @@ def check_ports(service: str, failures: list[str], warnings: list[str]) -> None:
     key, default = port_spec
     env = load_env(service)
     port = int(env.get(key, default))
-    container = str(SERVICES[service]["container"])
-    if port_open(port) and container_state(container) != "running":
+    container = SERVICES[service].get("container")
+    if port_open(port) and not container:
+        failures.append(f"{service}: host port {port} is already in use")
+    elif port_open(port) and container_state(str(container)) != "running":
         failures.append(f"{service}: host port {port} is already in use before {container} is running")
     elif port_open(port):
         warnings.append(f"{service}: host port {port} is already open by running container {container}")
@@ -274,7 +200,7 @@ def check_gpu_policy(target: str | None, failures: list[str], warnings: list[str
     running = [
         name
         for name, spec in gpu_services.items()
-        if container_state(str(spec["container"])) == "running"
+        if spec.get("container") and container_state(str(spec["container"])) == "running"
     ]
     running_without_target = [name for name in running if name != target]
     all_gpu_running = [name for name in running_without_target if gpu_services[name].get("all_gpus")]
@@ -297,6 +223,8 @@ def check_gpu_policy(target: str | None, failures: list[str], warnings: list[str
 
 def check_health(warnings: list[str]) -> None:
     for service, spec in SERVICES.items():
+        if not spec.get("container"):
+            continue
         container = str(spec["container"])
         state = container_state(container)
         if state == "missing":

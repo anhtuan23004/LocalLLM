@@ -1,6 +1,6 @@
 services:
   open-webui:
-    image: ghcr.io/open-webui/open-webui:${OPEN_WEBUI_IMAGE_TAG:-main}
+    image: ghcr.io/open-webui/open-webui:${OPEN_WEBUI_IMAGE_TAG:-v0.6.15}
     container_name: open-webui
     environment:
       WEBUI_NAME: ${WEBUI_NAME:-LLM-Local}

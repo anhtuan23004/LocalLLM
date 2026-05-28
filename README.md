@@ -19,6 +19,7 @@ Local LLM infrastructure for serving, training, evaluation, and observation.
 ├── training/            Model training/fine-tuning
 │   └── unsloth/         Unsloth fine-tuning environment
 ├── evaluation/          Benchmark and evaluation tools
+├── config/              Runtime catalog and validation command registry
 └── observation/         Metrics collection and visualization
 ```
 
@@ -31,6 +32,24 @@ docker network create llm-net
 ```
 
 ## Usage
+
+### Runtime Catalog
+
+Runtime facts shared by `llm-local`, startup guardrails, validation, model
+selection, and LiteLLM preset rendering live in `config/runtime-catalog.yaml`.
+Validation command names and ladder metadata live in
+`config/validation-commands.yaml`.
+
+### Validation
+
+```bash
+make validate-quick      # static checks; no running LLM services required
+make test-integration    # compose/config integration checks
+make test-platform       # live Docker host checks
+make release-check       # prepared GPU/runtime host release gate
+```
+
+`make validate` and `make smoke` run the quick validation ladder.
 
 ### Download Models
 

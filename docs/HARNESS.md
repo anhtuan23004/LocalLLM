@@ -168,25 +168,27 @@ either improve the harness directly or add a proposal to `HARNESS_BACKLOG.md`.
 
 ## Validation Ladder
 
-No top-level validation command contract exists yet. Until it does, story
-packets and validation reports should name the concrete Docker, Python, or shell
-commands that prove the behavior. The expected future ladder is:
+The executable validation command registry lives in
+`config/validation-commands.yaml`. The stable top-level commands are:
 
 ```text
-validate:quick
-  format, lint, typecheck, unit tests, architecture check
+make validate-quick
+  static validation: runtime catalog, compose configs, metadata-only registry
+  checks, script syntax, dashboard JSON, Makefile help, and pinned image
+  defaults
 
-test:integration
-  backend, database, provider, or service checks as the stack requires
+make test-integration
+  integration validation for compose/config and product-contract checks that do
+  not require live LLM services
 
-test:e2e
-  user-visible end-to-end flows
+make test-platform
+  live host validation for Docker network, running containers, and host
+  endpoints; use only on a prepared runtime host
 
-test:platform
-  shell, mobile, desktop, or deployment smoke checks as the stack requires
-
-test:release
-  full suite, log checks, and performance smoke
+make release-check
+  release validation on a prepared GPU/runtime host; includes strict model
+  registry file checks and runtime checks
 ```
 
-Agents must not claim these commands pass until they exist and have been run.
+`make validate` and `make smoke` run `make validate-quick`. Agents must not
+claim a command passes until it has been run in the current workspace.

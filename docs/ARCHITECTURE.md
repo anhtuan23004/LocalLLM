@@ -1,12 +1,16 @@
 # Architecture
 
+For the latest repository-level architecture audit and future-direction
+recommendations, see `docs/ARCHITECTURE_AUDIT.md`.
+
 ## Discovery Answers (LLM-Local)
 
 - **Product surfaces**: CLI (`llm-local`, Makefile), REST APIs (Ollama, vLLM, SGLang, llama.cpp, MLX-LM OpenAI-compat, LiteLLM gateway, OCR Extract), Open WebUI browser UI, Jupyter Lab (training), Grafana/Prometheus (observation).
 - **Runtime stack**: Docker Compose, Python 3.11, NVIDIA CUDA GPU, vLLM, SGLang, llama.cpp, Ollama, LiteLLM, Open WebUI, OCR Extract, Unsloth, Prometheus, Grafana, and host-side MLX-LM on Apple Silicon.
 - **Core domains**: Serving, Clients, Training, Evaluation, Observation, Model Management.
 - **Boundary inputs**: CLI arguments (benchmark params, model download args), environment variables (.env files), HTTP API requests (OpenAI-compat), filesystem (model weights, benchmark JSON, CSV/PNG output).
-- **Validation ladder**: Docker healthchecks → benchmark JSON schema → metrics CSV + chart generation → cross-service network reachability.
+- **Runtime catalog**: `config/runtime-catalog.yaml` is the source for service ids, compose paths, containers, host ports, GPU policy, model env keys, LiteLLM alias env keys, eval endpoints, runtime checks, and default image tags.
+- **Validation ladder**: `config/validation-commands.yaml` maps the ladder to `make validate-quick`, `make test-integration`, `make test-platform`, and `make release-check`.
 
 Stack choices recorded in `docs/decisions/0004-docker-compose-shared-network.md`.
 
@@ -50,7 +54,8 @@ LLM-Local is infrastructure-as-code, not a domain application. The relevant
 layers are:
 
 ```text
-Configuration (.env, docker-compose.yml, config/active/serving.yaml)
+Catalogs (config/runtime-catalog.yaml, config/validation-commands.yaml)
+  <- Configuration (.env, docker-compose.yml, config/active/serving.yaml)
   <- Services (Docker containers)
     <- Scripts (Python CLI tools)
       <- Shared Resources (models/, datasets/, results/)
@@ -60,18 +65,22 @@ Configuration (.env, docker-compose.yml, config/active/serving.yaml)
 
 | Layer | May depend on | Must not depend on |
 | --- | --- | --- |
-| Scripts | Shared resources, service APIs | Docker internals, other scripts |
+| Scripts | Runtime catalog, shared resources, service APIs | Duplicated runtime constants |
 | Services | Shared resources (bind mounts), llm-net | Other services being up (no hard deps) |
-| Configuration | Nothing | Hardcoded paths (use env vars) |
+| Configuration | Runtime catalog values and local `.env` overrides | Floating image defaults |
+| Catalogs | Product contracts and decisions | Local machine state |
 
 ## Parse-First Boundary Rule (adapted)
 
 - `.env` files parsed by Docker Compose before container start.
+- `config/runtime-catalog.yaml` is parsed by `llm_local.catalog` before
+  preflight, preset rendering, validation, and CLI routing use runtime facts.
 - `config/active/serving.yaml` is generated from serving presets; `config render`
   translates it into runtime `.env` model values.
-- CLI arguments parsed by argparse in Python scripts.
+- CLI arguments are routed by the Python command layer behind `./llm-local`.
 - Benchmark results validated as JSON before observation consumes them.
-- Model paths validated by download script before writing.
+- Model registry metadata can be validated without local weight files for quick
+  checks; strict registry validation remains part of the release ladder.
 
 ## Observability Contract (adapted)
 

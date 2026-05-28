@@ -4,15 +4,17 @@ import os
 import sys
 from ruamel.yaml import YAML
 
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
+
+from llm_local.catalog import format_targets
+
 yaml = YAML()
 
 FORMAT_GLOBS = {"safetensors": ".safetensors", "gguf": ".gguf", "pytorch": ".bin"}
 VALID_TARGETS = {"vllm", "sglang", "llama.cpp", "ollama", "mlx"}
-FORMAT_TARGETS = {
-    "safetensors": {"vllm", "sglang", "mlx"},
-    "pytorch": {"vllm", "sglang", "mlx"},
-    "gguf": {"llama.cpp", "ollama"},
-}
+FORMAT_TARGETS = format_targets()
 
 
 def model_targets(model):
@@ -23,7 +25,7 @@ def model_targets(model):
     return [target] if target else []
 
 
-def validate(registry_path):
+def validate(registry_path, metadata_only=False):
     if not os.path.isfile(registry_path):
         print(f"ERROR: Registry not found: {registry_path}")
         return 1
@@ -43,16 +45,17 @@ def validate(registry_path):
         abs_path = os.path.join(repo_root, path)
         print(f"  {mid:20s} {path} ... ", end="")
 
-        if not os.path.isdir(abs_path):
-            print("MISSING")
-            errors += 1
-            continue
+        if not metadata_only:
+            if not os.path.isdir(abs_path):
+                print("MISSING")
+                errors += 1
+                continue
 
-        ext = FORMAT_GLOBS.get(fmt)
-        if ext and not any(f.endswith(ext) for f in os.listdir(abs_path)):
-            print(f"WARN: no {ext} files")
-            errors += 1
-            continue
+            ext = FORMAT_GLOBS.get(fmt)
+            if ext and not any(f.endswith(ext) for f in os.listdir(abs_path)):
+                print(f"WARN: no {ext} files")
+                errors += 1
+                continue
 
         unknown_targets = [target for target in model_targets(m) if target not in VALID_TARGETS]
         if unknown_targets:
@@ -82,6 +85,8 @@ def validate(registry_path):
 
 
 if __name__ == "__main__":
-    path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(
+    metadata_only = "--metadata-only" in sys.argv
+    args = [arg for arg in sys.argv[1:] if arg != "--metadata-only"]
+    path = args[0] if args else os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "registry.yaml")
-    sys.exit(validate(path))
+    sys.exit(validate(path, metadata_only=metadata_only))

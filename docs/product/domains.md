@@ -8,14 +8,14 @@ Expose LLM inference endpoints on the local network.
 
 | Service | Engine | API | Host port | Runtime port | GPU |
 | --- | --- | --- | ---: | ---: | --- |
-| Ollama | ollama/ollama:latest | Ollama API + OpenAI-compat | 18134 | 11434 | all |
+| Ollama | ollama/ollama:0.24.0 | Ollama API + OpenAI-compat | 18134 | 11434 | all |
 | vLLM | vllm/vllm-openai | OpenAI-compatible | 18000 | 8000 | GPU 0 by default |
-| SGLang | lmsysorg/sglang | OpenAI-compatible | 18030 | 30000 | GPU 0 by default |
-| llama.cpp | ghcr.io/ggml-org/llama.cpp | OpenAI-compatible | 18080 | 8080 | GPU 0 by default |
+| SGLang | lmsysorg/sglang:v0.5.12.post1 | OpenAI-compatible | 18030 | 30000 | GPU 0 by default |
+| llama.cpp | ghcr.io/ggml-org/llama.cpp:server-cuda@sha256:213012cb085f3f9042179915b987e9d28617a91f3b4a6e37991ab7dbb0de1bf1 | OpenAI-compatible | 18080 | 8080 | GPU 0 by default |
 | MLX-LM | mlx-lm host process | OpenAI-compatible | 18081 | 18081 | Apple Silicon Metal |
-| LiteLLM | docker.litellm.ai/berriai/litellm | OpenAI-compatible gateway | 18040 | 4000 | none |
-| Open WebUI | ghcr.io/open-webui/open-webui | Browser UI client | 18088 | 8080 | none |
-| OCR Extract | llm-local-ocr-extract | Gemini-OCR-like public OCR API v1 | 18092 | 8092 | none |
+| LiteLLM | docker.litellm.ai/berriai/litellm:v1.72.6-stable | OpenAI-compatible gateway | 18040 | 4000 | none |
+| Open WebUI | ghcr.io/open-webui/open-webui:v0.6.15 | Browser UI client | 18088 | 8080 | none |
+| OCR Extract | llm-local-ocr-extract:0.1.0 | Gemini-OCR-like public OCR API v1 | 18092 | 8092 | none |
 
 ### Contracts
 
@@ -40,6 +40,10 @@ Expose LLM inference endpoints on the local network.
 
 ### Configuration
 
+- Runtime facts shared by the CLI, guardrails, validation, and model preset
+  rendering are centralized in `config/runtime-catalog.yaml`.
+- Tracked image defaults are pinned in the runtime catalog and compose defaults;
+  local `.env` files may override them deliberately.
 - Ollama: stateless config, model data in `ollama_data` Docker volume.
 - vLLM: `.env` file controls model path, served model name, GPU allocation, memory utilization, and tensor parallelism.
 - SGLang: `.env` file controls model path, host/container ports, tensor parallelism, memory fraction, and GPU allocation.
@@ -69,7 +73,7 @@ Fine-tune models using GPU-accelerated Jupyter environment.
 
 | Service | Engine | Interface | Port | GPU |
 | --- | --- | --- | --- | --- |
-| Unsloth | unsloth/unsloth:latest | Jupyter Lab | 8888 | all |
+| Unsloth | unsloth/unsloth:2026.5.7-pt2.10.0-vllm-0.16.0-cu12.8-studio-release-v0.1.41-beta-2026-MAY-24 | Jupyter Lab | 8888 | all |
 
 ### Contracts
 
@@ -176,7 +180,9 @@ Download, inventory, and convert model weights across services.
   power-user command for runtime-specific model selection.
 - `convert.sh hf2gguf <path>` converts HuggingFace weights to GGUF via llama.cpp `convert_hf_to_gguf.py`; llama.cpp is shallow-cloned into `vendor/llama.cpp` on first use.
 - `convert.sh gguf2ollama <path>` imports GGUF into Ollama via `ollama create` with generated Modelfile.
-- `validate_registry.py` checks all registry entries have valid paths and expected files.
+- `validate_registry.py --metadata-only` checks registry metadata for quick
+  validation without requiring ignored local model weights. Strict
+  `validate_registry.py` also checks local paths and expected model files.
 - Models directory bind-mounted into serving and training containers.
 
 ---

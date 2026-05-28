@@ -35,7 +35,8 @@ Direct runtime access to Ollama remains available.
 
 ## Design Notes
 
-- LiteLLM image: `docker.litellm.ai/berriai/litellm:main-stable` by default.
+- LiteLLM image: `docker.litellm.ai/berriai/litellm:v1.72.6-stable` by
+  default.
 - Gateway host port: `18040`.
 - Gateway model alias: `local-ollama`.
 - Upstream model env var: `OLLAMA_LITELLM_MODEL`, default
@@ -77,7 +78,7 @@ $ ./llm-local smoke
 # exits 0 and includes serving/litellm compose validation.
 
 $ ./llm-local serve litellm up
-# pulls/starts docker.litellm.ai/berriai/litellm:main-stable on first run
+# pulls/starts docker.litellm.ai/berriai/litellm:v1.72.6-stable on first run
 
 $ curl -fsS -H "Authorization: Bearer sk-local-litellm" http://localhost:18040/v1/models
 {"data":[{"id":"local-ollama","object":"model","created":1677610602,"owned_by":"openai"}],"object":"list"}

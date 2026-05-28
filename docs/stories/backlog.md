@@ -53,6 +53,14 @@ These are ready to slice into story packets when selected:
 - **Cross-S03**: Add GPU availability pre-check script. _(implemented — see `docs/stories/epics/cross/Cross-S03-runtime-guardrails.md`)_
 - **Cross-S04**: Fix compose-contract drift for Unsloth Ollama reachability and vLLM healthcheck/env configuration. _(implemented — see `docs/stories/epics/cross/Cross-S04-compose-contract-drift.md`)_
 - **Cross-S05**: Add lightweight smoke regression guard. _(implemented — see `docs/stories/epics/cross/Cross-S05-smoke-regression-guard.md`)_
+- **Cross-S06**: Split durable model metadata from local model inventory so
+  `make smoke` can pass on a fresh clone or cleaned cache without requiring
+  ignored model weight files. _(candidate from architecture audit — see
+  `docs/ARCHITECTURE_AUDIT.md`)_
+- **Cross-S07**: Centralize runtime contract facts, move `llm-local` behind a
+  Python command layer, define executable validation ladder commands, and pin
+  runtime image defaults. _(implemented — see
+  `docs/stories/epics/cross/Cross-S07-runtime-contract-control-plane.md`)_
 - **E07-S01**: Add minimal LiteLLM gateway routing to Ollama. _(implemented — see `docs/stories/epics/serving/E07-S01-minimal-litellm-gateway.md`)_
 - **E07-S02**: Add LiteLLM aliases for vLLM, SGLang, llama.cpp, and MLX-LM. _(implemented — see `docs/stories/epics/serving/E07-S02-litellm-multi-runtime-routing.md`)_
 - **E07-S03**: Add evaluation target and Makefile benchmark path for LiteLLM. _(implemented — see `docs/stories/epics/evaluation/E07-S03-litellm-evaluation-target.md`)_

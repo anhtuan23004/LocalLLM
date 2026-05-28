@@ -8,6 +8,7 @@
        preset-list preset-apply config-render \
        benchmark-ollama benchmark-vllm benchmark-litellm eval-quality \
        validate validate-compose validate-health validate-registry \
+       validate-quick test-integration test-platform release-check \
        guardrails smoke down help
 
 N ?= 10
@@ -133,13 +134,24 @@ validate-health: ## Check running container healthchecks
 validate-registry: ## Check model registry paths
 	./llm-local model validate
 
-validate: validate-compose validate-registry ## Run all validations
+validate-quick: ## Run quick static validation ladder
+	./llm-local validate quick
+
+test-integration: ## Run integration validation ladder
+	./llm-local validate integration
+
+test-platform: ## Run live platform validation ladder
+	./llm-local validate platform
+
+release-check: ## Run release validation ladder on a prepared runtime host
+	./llm-local validate release
+
+validate: validate-quick ## Run default validation
 
 guardrails: ## Check GPU policy, ports, service health, and model/runtime compatibility
 	./llm-local guardrails --all
 
-smoke: ## Run lightweight regression smoke test
-	./llm-local smoke
+smoke: validate-quick ## Run lightweight regression smoke test
 
 # --- Lifecycle ---
 

@@ -1,6 +1,6 @@
 services:
   litellm:
-    image: docker.litellm.ai/berriai/litellm:${LITELLM_IMAGE_TAG:-main-stable}
+    image: docker.litellm.ai/berriai/litellm:${LITELLM_IMAGE_TAG:-v1.72.6-stable}
     container_name: litellm
     command: ["--config", "/app/config.yaml", "--port", "${CONTAINER_PORT:-4000}"]
     environment:

@@ -14,7 +14,7 @@ services:
 
   # Real-time stack
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:${PROMETHEUS_IMAGE_TAG:-v3.11.0}
     container_name: prometheus
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
@@ -26,7 +26,7 @@ services:
     restart: unless-stopped
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:${GRAFANA_IMAGE_TAG:-12.0.2}
     container_name: grafana
     environment:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
@@ -59,7 +59,7 @@ services:
     restart: unless-stopped
 
   nvidia-gpu-exporter:
-    image: utkuozdemir/nvidia_gpu_exporter:1.2.1
+    image: utkuozdemir/nvidia_gpu_exporter:${GPU_EXPORTER_IMAGE_TAG:-1.2.1}
     container_name: nvidia-gpu-exporter
     profiles:
       - gpu
