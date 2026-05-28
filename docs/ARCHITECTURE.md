@@ -2,9 +2,9 @@
 
 ## Discovery Answers (LLM-Local)
 
-- **Product surfaces**: CLI (`llm-local`, Makefile), REST APIs (Ollama, vLLM, SGLang, llama.cpp, MLX-LM OpenAI-compat, LiteLLM gateway), Open WebUI browser UI, Jupyter Lab (training), Grafana/Prometheus (observation).
-- **Runtime stack**: Docker Compose, Python 3.11, NVIDIA CUDA GPU, vLLM, SGLang, llama.cpp, Ollama, LiteLLM, Open WebUI, Unsloth, Prometheus, Grafana, and host-side MLX-LM on Apple Silicon.
-- **Core domains**: Serving, Training, Evaluation, Observation, Model Management.
+- **Product surfaces**: CLI (`llm-local`, Makefile), REST APIs (Ollama, vLLM, SGLang, llama.cpp, MLX-LM OpenAI-compat, LiteLLM gateway, OCR Extract), Open WebUI browser UI, Jupyter Lab (training), Grafana/Prometheus (observation).
+- **Runtime stack**: Docker Compose, Python 3.11, NVIDIA CUDA GPU, vLLM, SGLang, llama.cpp, Ollama, LiteLLM, Open WebUI, OCR Extract, Unsloth, Prometheus, Grafana, and host-side MLX-LM on Apple Silicon.
+- **Core domains**: Serving, Clients, Training, Evaluation, Observation, Model Management.
 - **Boundary inputs**: CLI arguments (benchmark params, model download args), environment variables (.env files), HTTP API requests (OpenAI-compat), filesystem (model weights, benchmark JSON, CSV/PNG output).
 - **Validation ladder**: Docker healthchecks → benchmark JSON schema → metrics CSV + chart generation → cross-service network reachability.
 
@@ -22,6 +22,7 @@ Host (NVIDIA GPU workstation)
 │   ├── llama-cpp       (serving/llama.cpp)    host :18080 → container :8080
 │   ├── litellm         (serving/litellm)      host :18040 → container :4000
 │   ├── open-webui      (clients/open-webui)   host :18088 → container :8080
+│   ├── ocr-extract     (clients/ocr-extract)  host :18092 → container :8092
 │   ├── unsloth         (training/unsloth)     :8888, :8001, :2222
 │   ├── evaluation      (evaluation/)          run-once
 │   ├── observation     (observation/)         run-once (batch profile)

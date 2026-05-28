@@ -29,6 +29,11 @@ _Avoid_: source preset, registry entry.
 A stable LiteLLM model name that clients use instead of direct runtime model names.
 _Avoid_: model id when referring to the client-facing alias.
 
+**Client Service**:
+A local API or UI surface that consumes the LiteLLM gateway rather than loading
+models itself.
+_Avoid_: serving runtime when the component does not host model weights.
+
 **Compose Profile**:
 A Docker Compose opt-in service group such as `gpu`, `batch`, or `quality`.
 _Avoid_: profile when discussing model selection workflows.
@@ -39,6 +44,7 @@ _Avoid_: profile when discussing model selection workflows.
 - A **Serving Preset** chooses one **Serving Runtime** and one **Gateway Alias**.
 - **Active Serving State** is generated from exactly one **Serving Preset**.
 - A **Gateway Alias** points to the model currently configured behind a **Serving Runtime**.
+- A **Client Service** calls the LiteLLM gateway through a **Gateway Alias**.
 - A **Compose Profile** is infrastructure lifecycle configuration, not model selection state.
 
 ## Example Dialogue

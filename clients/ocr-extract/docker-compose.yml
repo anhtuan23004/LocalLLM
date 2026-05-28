@@ -1,0 +1,31 @@
+services:
+  ocr-extract:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: llm-local-ocr-extract:latest
+    container_name: ocr-extract
+    command: ["uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "${CONTAINER_PORT:-8092}"]
+    environment:
+      LITELLM_BASE_URL: ${LITELLM_BASE_URL:-http://litellm:4000/v1}
+      LITELLM_API_KEY: ${LITELLM_API_KEY:-sk-local-litellm}
+      LITELLM_MODEL: ${LITELLM_MODEL:-}
+      REQUEST_TIMEOUT_SECONDS: ${REQUEST_TIMEOUT_SECONDS:-120}
+      MAX_FILE_BYTES: ${MAX_FILE_BYTES:-52428800}
+      MAX_PDF_PAGES: ${MAX_PDF_PAGES:-20}
+      PDF_RENDER_DPI: ${PDF_RENDER_DPI:-144}
+    ports:
+      - "${HOST_PORT:-18092}:${CONTAINER_PORT:-8092}"
+    networks:
+      - llm-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:${CONTAINER_PORT:-8092}/health', timeout=5).read()\""]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
+
+networks:
+  llm-net:
+    external: true

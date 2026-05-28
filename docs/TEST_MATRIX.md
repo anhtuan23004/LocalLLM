@@ -39,6 +39,8 @@ not mark a row implemented until tests or validation evidence exist.
 | E07-S03 | Evaluation can benchmark through LiteLLM with gateway auth | yes | yes | no | no | implemented | docs/stories/epics/evaluation/E07-S03-litellm-evaluation-target.md |
 | E07-S04 | Prometheus scrapes LiteLLM and Grafana shows gateway panels | yes | yes | no | no | implemented | docs/stories/epics/observation/E07-S04-litellm-observability.md |
 | E07-S05 | Open WebUI browser client connects to LiteLLM on llm-net | no | yes | no | no | implemented | docs/stories/epics/clients/E07-S05-open-webui-adapter.md |
+| E08-S01 | OCR Extract client exposes one-image schema-driven extraction through LiteLLM | yes | yes | no | no | changed | docs/stories/epics/clients/E08-S01-ocr-extract-client.md |
+| E08-S02 | OCR Extract exposes public v1 classify-segment and extract for image/PDF through strict LiteLLM structured output | yes | yes | no | no | implemented | docs/stories/epics/clients/E08-S02-ocr-v1-public-api/overview.md |
 | Cross-S01 | All services reachable on llm-net | no | yes | no | yes | implemented | docs/stories/epics/cross/Cross-S01-llm-net-reachability.md |
 | Cross-S02 | Makefile orchestration targets work and compose configs validate | yes | yes | no | no | implemented | docs/stories/epics/cross/Cross-S02-makefile-orchestration.md |
 | Cross-S03 | Startup guardrails catch GPU contention, port conflicts, unhealthy services, and invalid model/runtime combinations early | yes | yes | no | yes | implemented | docs/stories/epics/cross/Cross-S03-runtime-guardrails.md |

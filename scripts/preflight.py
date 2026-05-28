@@ -57,6 +57,12 @@ SERVICES = {
         "host_port": ("HOST_PORT", 18088),
         "gpu": False,
     },
+    "ocr-extract": {
+        "dir": "clients/ocr-extract",
+        "container": "ocr-extract",
+        "host_port": ("HOST_PORT", 18092),
+        "gpu": False,
+    },
     "unsloth": {
         "dir": "training/unsloth",
         "container": "unsloth",

@@ -67,6 +67,7 @@ check "serving/sglang" docker compose -f serving/sglang/docker-compose.yml confi
 check "serving/llama.cpp" docker compose -f serving/llama.cpp/docker-compose.yml config
 check "serving/litellm" docker compose -f serving/litellm/docker-compose.yml config
 check "clients/open-webui" docker compose -f clients/open-webui/docker-compose.yml config
+check "clients/ocr-extract" docker compose -f clients/ocr-extract/docker-compose.yml config
 check "training/unsloth" docker compose -f training/unsloth/docker-compose.yml config
 check "evaluation" docker compose -f evaluation/docker-compose.yml config
 check "observation" docker compose -f observation/docker-compose.yml config
@@ -86,6 +87,7 @@ check "convert.sh syntax" bash -n models/convert.sh
 check "validate_registry.py syntax" uv run python -m py_compile models/validate_registry.py
 check "presets.py syntax" uv run python -m py_compile models/presets.py
 check "preflight.py syntax" uv run python -m py_compile scripts/preflight.py
+check "ocr-extract app syntax" sh -c 'python3 -m py_compile clients/ocr-extract/src/*.py'
 check "ollama_exporter.py syntax" uv run python -m py_compile observation/scripts/ollama_exporter.py
 check "run_lm_eval.sh syntax" sh -n evaluation/scripts/run_lm_eval.sh
 check "mlx serve.sh syntax" bash -n serving/mlx/serve.sh
@@ -120,6 +122,8 @@ if [ "$RUNTIME" -eq 1 ]; then
   check "Grafana up" curl -sf "http://localhost:${GRAFANA_HOST_PORT:-3000}/api/health"
   check "Open WebUI container up" sh -c 'docker inspect open-webui >/dev/null 2>&1 && status=$(docker inspect --format="{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}" open-webui); [ "$status" = healthy ] || [ "$status" = running ]'
   check "Open WebUI responds" curl -sf "http://localhost:18088/health"
+  check "OCR extract healthy or absent" sh -c 'docker inspect ocr-extract >/dev/null 2>&1 || exit 0; status=$(docker inspect --format="{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}" ocr-extract); [ "$status" = healthy ] || [ "$status" = running ]'
+  check "OCR extract responds if running" sh -c 'docker inspect ocr-extract >/dev/null 2>&1 || exit 0; curl -sf "http://localhost:18092/health"'
 else
   echo "=== Runtime Checks ==="
   echo "  skipped (run ./scripts/smoke.sh --runtime to check live services)"

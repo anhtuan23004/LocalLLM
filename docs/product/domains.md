@@ -15,6 +15,7 @@ Expose LLM inference endpoints on the local network.
 | MLX-LM | mlx-lm host process | OpenAI-compatible | 18081 | 18081 | Apple Silicon Metal |
 | LiteLLM | docker.litellm.ai/berriai/litellm | OpenAI-compatible gateway | 18040 | 4000 | none |
 | Open WebUI | ghcr.io/open-webui/open-webui | Browser UI client | 18088 | 8080 | none |
+| OCR Extract | llm-local-ocr-extract | Gemini-OCR-like public OCR API v1 | 18092 | 8092 | none |
 
 ### Contracts
 
@@ -28,6 +29,12 @@ Expose LLM inference endpoints on the local network.
   `local-vllm`, `local-sglang`, `local-llama-cpp`, and `local-mlx`.
 - Open WebUI exposes a browser interface for interactive use and connects to
   LiteLLM as its OpenAI-compatible provider at `http://litellm:4000/v1`.
+- OCR Extract exposes `POST /api/v1/ocr/classify-segment` and
+  `POST /api/v1/ocr/extract` for schema-driven document classification and
+  extraction. It accepts image or PDF `file_url`, renders PDF pages to images
+  internally, rejects private/reserved `file_url` destinations before and after
+  redirects, requires strict structured model output, and calls LiteLLM through
+  the configured `LITELLM_MODEL` Gateway Alias.
 - Docker services join `llm-net` and are reachable by container name from other services.
 - Healthchecks defined: Ollama via `ollama list`, vLLM via curl `/health`, SGLang via curl `/health`.
 
@@ -45,6 +52,11 @@ Expose LLM inference endpoints on the local network.
   persistent secret key, and the LiteLLM OpenAI-compatible base URL/key. Direct
   Ollama API integration is disabled by default so LiteLLM remains the client
   gateway.
+- OCR Extract: `.env` file controls host/container ports, LiteLLM base URL,
+  LiteLLM API key, required `LITELLM_MODEL`, request timeout, maximum file size,
+  maximum PDF page count, and PDF render DPI. Public requests do not accept
+  model/provider override fields; switching model behavior happens through the
+  Gateway Alias.
 - Host ports use the `18xxx` range by default to avoid common local service conflicts while keeping runtime/container ports unchanged.
 
 ---
