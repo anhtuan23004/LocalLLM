@@ -47,6 +47,9 @@ pulls a heavy image or starts a GPU process:
 - Model compatibility is intentionally simple and registry-based:
   `safetensors`/`pytorch` target vLLM, SGLang, and MLX; `gguf` targets
   llama.cpp and Ollama.
+- Runtime model paths for Docker-backed serving must use mounted container
+  paths under `/models/...`. llama.cpp explicit `.gguf` file paths are accepted
+  even when the parent model directory also has a sidecar for non-GGUF serving.
 
 ## Validation
 
@@ -90,4 +93,12 @@ The live guardrail path was also exercised on the current workstation:
 ./llm-local smoke --runtime
 # exits non-zero because live Ollama/vLLM/Prometheus/Grafana containers are not
 # running and guardrails detect the Open WebUI port conflict.
+```
+
+Follow-up validation for the mounted-path guardrail:
+
+```bash
+uv run python -m py_compile scripts/preflight.py
+./llm-local guardrails llama.cpp
+# OK after local llama.cpp .env uses /models/... paths for the GGUF and mmproj files.
 ```

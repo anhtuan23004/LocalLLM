@@ -16,13 +16,18 @@ services:
       LLAMA_ARG_HOST: 0.0.0.0
       LLAMA_ARG_PORT: ${CONTAINER_PORT:-8080}
       LLAMA_ARG_ALIAS: local-gguf
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           device_ids: ['0']
+    #           capabilities: [gpu]
     deploy:
       resources:
         reservations:
           devices:
-            - driver: nvidia
-              device_ids: ['0']
-              capabilities: [gpu]
+            - capabilities: ["gpu"]
     networks:
       - llm-net
 
