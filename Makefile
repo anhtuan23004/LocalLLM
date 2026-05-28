@@ -2,6 +2,7 @@
        sglang-up sglang-down llama-cpp-up llama-cpp-down mlx-up \
        litellm-up litellm-down \
        open-webui-up open-webui-down \
+       ocr-extract-up ocr-extract-down \
        train-up train-down \
        observe-up observe-down observe-batch \
        preset-list preset-apply config-render \
@@ -55,6 +56,12 @@ open-webui-up: ## Start Open WebUI client
 
 open-webui-down:
 	./llm-local webui down
+
+ocr-extract-up: ## Start OCR extract client
+	./llm-local ocr-extract up
+
+ocr-extract-down:
+	./llm-local ocr-extract down
 
 # --- Training ---
 
@@ -113,6 +120,7 @@ validate-compose: ## Verify all docker-compose configs are valid
 	docker compose -f serving/llama.cpp/docker-compose.yml config >/dev/null
 	docker compose -f serving/litellm/docker-compose.yml config >/dev/null
 	docker compose -f clients/open-webui/docker-compose.yml config >/dev/null
+	docker compose -f clients/ocr-extract/docker-compose.yml config >/dev/null
 	docker compose -f training/unsloth/docker-compose.yml config >/dev/null
 	docker compose -f evaluation/docker-compose.yml config >/dev/null
 	docker compose -f observation/docker-compose.yml config >/dev/null
@@ -142,6 +150,7 @@ down: ## Stop all services
 	-./llm-local serve llama.cpp down
 	-./llm-local serve litellm down
 	-./llm-local webui down
+	-./llm-local ocr-extract down
 	-./llm-local train down
 	-./llm-local observe down
 

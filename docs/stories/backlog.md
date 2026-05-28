@@ -17,6 +17,7 @@ they disagree, the matrix is the source of truth.
 | E05-model-management | Model download, inventory, storage, and cross-service sharing | implemented |
 | E06-real-time-observability | Prometheus, Grafana, and optional GPU metrics for live inference visibility | implemented |
 | E07-litellm-gateway | LiteLLM as one OpenAI-compatible gateway across local runtimes | implemented |
+| E08-clients | Programmatic clients that consume LiteLLM for local application workflows | partially implemented |
 
 ## Next Selected Story
 
@@ -57,3 +58,5 @@ These are ready to slice into story packets when selected:
 - **E07-S03**: Add evaluation target and Makefile benchmark path for LiteLLM. _(implemented — see `docs/stories/epics/evaluation/E07-S03-litellm-evaluation-target.md`)_
 - **E07-S04**: Scrape LiteLLM Prometheus metrics and add Grafana gateway panels. _(implemented — see `docs/stories/epics/observation/E07-S04-litellm-observability.md`)_
 - **E07-S05**: Add Open WebUI as a client of LiteLLM. _(implemented — see `docs/stories/epics/clients/E07-S05-open-webui-adapter.md`)_
+- **E08-S01**: Add one-image OCR extract client API through LiteLLM. _(changed by E08-S02 — see `docs/stories/epics/clients/E08-S01-ocr-extract-client.md`)_
+- **E08-S02**: Add public OCR API v1 classify-segment/extract for image and PDF through strict LiteLLM structured output. _(implemented — see `docs/stories/epics/clients/E08-S02-ocr-v1-public-api/overview.md`)_

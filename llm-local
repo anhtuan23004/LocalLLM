@@ -28,6 +28,7 @@ Commands:
   eval quality                                Run lm-eval harness
   serve <ollama|vllm|sglang|llama.cpp|mlx|litellm> [up|down]  Manage serving
   webui [up|down]                             Manage Open WebUI client
+  ocr-extract [up|down]                       Manage OCR extract client
   train [up|down]                            Manage training
   observe [up|down|batch]                    Manage observability
   guardrails [service|--all]                 Run startup guardrails
@@ -184,6 +185,15 @@ case "${1:-}" in
             cd "$ROOT/clients/open-webui" && docker compose up -d ;;
       down) cd "$ROOT/clients/open-webui" && docker compose down ;;
       *) echo "ERROR: webui action must be up or down"; exit 1 ;;
+    esac ;;
+  ocr-extract)
+    action="${2:-up}"
+    case "$action" in
+      up)   docker network create llm-net 2>/dev/null || true
+            "$PYTHON" "$ROOT/scripts/preflight.py" ocr-extract
+            cd "$ROOT/clients/ocr-extract" && docker compose up -d ;;
+      down) cd "$ROOT/clients/ocr-extract" && docker compose down ;;
+      *) echo "ERROR: ocr-extract action must be up or down"; exit 1 ;;
     esac ;;
   train)
     action="${2:-up}"
