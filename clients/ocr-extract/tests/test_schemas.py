@@ -75,3 +75,26 @@ def test_duplicate_group_codes_are_rejected():
                 ],
             }
         )
+
+
+def test_required_false_fields_are_rejected_for_strict_output():
+    with pytest.raises(ValidationError, match="required=False is not supported"):
+        ExtractRequest.model_validate(
+            {
+                "file_url": "https://example.com/file.pdf",
+                "extraction_schemas": [
+                    {
+                        "group_code": "invoice",
+                        "group_name": "Invoice",
+                        "group_description": "Invoice documents",
+                        "fields": [
+                            {
+                                "field_key": "invoice_number",
+                                "data_type": "string",
+                                "required": False,
+                            }
+                        ],
+                    }
+                ],
+            }
+        )

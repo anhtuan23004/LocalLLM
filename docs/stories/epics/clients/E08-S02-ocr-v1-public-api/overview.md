@@ -12,9 +12,10 @@ OCR Extract exposes public API v1:
 - `POST /api/v1/ocr/classify-segment`
 - `POST /api/v1/ocr/extract`
 
-The service accepts image or PDF `file_url`, renders PDF pages to images
-internally, hides model selection from callers, requires `LITELLM_MODEL`, and sends
-strict structured output requests through LiteLLM.
+The service accepts image or PDF `file_url`, rejects private/reserved download
+destinations before and after redirects, renders PDF pages to images internally,
+hides model selection from callers, requires `LITELLM_MODEL`, and sends strict
+structured output requests through LiteLLM.
 
 ## Affected Users
 

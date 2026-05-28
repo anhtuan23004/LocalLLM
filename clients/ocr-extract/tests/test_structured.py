@@ -1,5 +1,5 @@
-from src.schemas import ExtractionGroupSchema
-from src.structured import extraction_response_schema, strict_response_format
+from src.schemas import DocumentGroupSchema, ExtractionGroupSchema
+from src.structured import classify_response_schema, extraction_response_schema, strict_response_format
 
 
 def test_strict_response_format_uses_json_schema_strict():
@@ -12,7 +12,26 @@ def test_strict_response_format_uses_json_schema_strict():
     }
 
 
-def test_extraction_schema_requires_all_fields_and_allows_null():
+def test_classification_schema_restricts_page_ranges_to_pairs():
+    group = DocumentGroupSchema.model_validate(
+        {
+            "group_code": "invoice",
+            "group_name": "Invoice",
+            "group_description": "Invoice documents",
+        }
+    )
+
+    schema = classify_response_schema([group])
+    page_range_item = (
+        schema["properties"]["documents"]["items"]["properties"]["page_ranges"]["items"]
+    )
+
+    assert page_range_item["minItems"] == 2
+    assert page_range_item["maxItems"] == 2
+    assert page_range_item["items"] == {"type": "integer"}
+
+
+def test_extraction_schema_requires_all_fields_and_respects_nullable():
     group = ExtractionGroupSchema.model_validate(
         {
             "group_code": "invoice",
@@ -36,7 +55,8 @@ def test_extraction_schema_requires_all_fields_and_allows_null():
 
     assert schema["required"] == ["invoice_number", "total_amount"]
     assert schema["additionalProperties"] is False
-    assert {"type": "null"} in schema["properties"]["invoice_number"]["anyOf"]
+    assert schema["properties"]["invoice_number"] == {"type": "string"}
+    assert {"type": "null"} in schema["properties"]["total_amount"]["anyOf"]
 
 
 def test_unknown_schema_has_no_open_object_properties():

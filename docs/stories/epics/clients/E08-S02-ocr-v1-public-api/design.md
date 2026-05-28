@@ -23,8 +23,15 @@ accept `model_name`, `api_key`, `temperature`, `thinking_budget`, or other
 provider-specific fields.
 
 Responses use `documents[]`. Classification documents include
-`page_ranges`, `page_order`, and `duplicate_pages`. Extraction documents include
-`page_order`, `duplicate_pages`, and `extracted_data`.
+`page_ranges`, `page_order`, and `duplicate_pages`; each `page_ranges` item is
+exactly `[start_page, end_page]`. Extraction documents include `page_order`,
+`duplicate_pages`, and `extracted_data`. Field schemas may use `nullable: false`
+to disallow null output. `required: false` is rejected because strict structured
+output requires every key to remain required.
+
+`file_url` download targets must resolve to public internet addresses. The
+service validates the initial URL and each redirect target before fetching.
+Upstream 5xx download responses return 502 and download timeouts return 504.
 
 ## Data Model
 
@@ -39,6 +46,7 @@ and represents the LiteLLM Gateway Alias used by the client.
 
 Existing container health and smoke checks remain the validation surface. Runtime
 model failures return 502; missing `LITELLM_MODEL` returns a configuration error.
+Download SSRF rejections return 400 before model work starts.
 
 ## Alternatives Considered
 

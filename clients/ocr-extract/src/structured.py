@@ -25,7 +25,12 @@ def classify_response_schema(groups: list[DocumentGroupSchema]) -> dict[str, Any
             "document_name": {"type": "string"},
             "page_ranges": {
                 "type": "array",
-                "items": {"type": "array", "items": {"type": "integer"}},
+                "items": {
+                    "type": "array",
+                    "items": {"type": "integer"},
+                    "minItems": 2,
+                    "maxItems": 2,
+                },
             },
             "page_order": {"type": "array", "items": {"type": "integer"}},
             "duplicate_pages": {
@@ -99,7 +104,9 @@ def field_schema(field: FieldSchema) -> dict[str, Any]:
     description = field.description or field.field_name
     if description:
         value_schema["description"] = description
-    return {"anyOf": [value_schema, {"type": "null"}]}
+    if field.nullable:
+        return {"anyOf": [value_schema, {"type": "null"}]}
+    return value_schema
 
 
 def unknown_extraction_schema() -> dict[str, Any]:

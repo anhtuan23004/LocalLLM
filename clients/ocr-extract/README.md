@@ -11,7 +11,9 @@ output.
   - `POST /api/v1/ocr/classify-segment`
   - `POST /api/v1/ocr/extract`
 - Input: one HTTP/HTTPS `file_url` pointing to `image/png`, `image/jpeg`,
-  `image/webp`, or `application/pdf`.
+  `image/webp`, or `application/pdf`. The resolved host must be publicly
+  routable; private, loopback, link-local, reserved, and redirected private
+  destinations are rejected.
 - Model route: required `LITELLM_MODEL` LiteLLM Gateway Alias.
 - PDF handling: render pages to PNG before model calls.
 - Structured output: requires `response_format.type=json_schema` with
@@ -126,7 +128,11 @@ Response:
 }
 ```
 
-If a requested field is not visible, the key is still present with `null`.
+If a requested nullable field is not visible, the key is still present with
+`null`. Fields default to `nullable: true`; `nullable: false` removes `null`
+from the strict extraction schema and model responses with missing/null values
+fail validation. `required: false` is not supported because strict structured
+output requires every schema key to be listed as required.
 Unknown documents are returned only when the caller includes a group with
 `group_code: "unknown"`.
 

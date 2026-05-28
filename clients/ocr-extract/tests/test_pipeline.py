@@ -30,7 +30,7 @@ def test_unknown_document_is_ignored_unless_schema_allows_unknown():
     assert normalized.documents == []
 
 
-def test_normalize_extracted_data_fills_missing_values_with_null():
+def test_normalize_extracted_data_fills_missing_nullable_values_with_null():
     group = ExtractionGroupSchema.model_validate(
         {
             "group_code": "invoice",
@@ -40,7 +40,6 @@ def test_normalize_extracted_data_fills_missing_values_with_null():
                 {
                     "field_key": "invoice_number",
                     "data_type": "string",
-                    "nullable": False,
                 },
                 {
                     "field_key": "total_amount",
@@ -53,6 +52,26 @@ def test_normalize_extracted_data_fills_missing_values_with_null():
     extracted = normalize_extracted_data(group, {"invoice_number": "INV-001"})
 
     assert extracted == {"invoice_number": "INV-001", "total_amount": None}
+
+
+def test_normalize_extracted_data_rejects_missing_non_nullable_values():
+    group = ExtractionGroupSchema.model_validate(
+        {
+            "group_code": "invoice",
+            "group_name": "Invoice",
+            "group_description": "Invoice documents",
+            "fields": [
+                {
+                    "field_key": "invoice_number",
+                    "data_type": "string",
+                    "nullable": False,
+                }
+            ],
+        }
+    )
+
+    with pytest.raises(ValueError, match="invoice_number must not be null"):
+        normalize_extracted_data(group, {})
 
 
 def test_normalize_extracted_data_rejects_extra_keys():

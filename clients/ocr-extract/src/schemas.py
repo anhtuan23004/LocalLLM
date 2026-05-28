@@ -38,6 +38,13 @@ class FieldSchema(BaseModel):
             raise ValueError("field_key must not be empty")
         return normalized
 
+    @field_validator("required")
+    @classmethod
+    def validate_required(cls, value: bool) -> bool:
+        if not value:
+            raise ValueError("required=False is not supported with strict structured output")
+        return value
+
     @model_validator(mode="after")
     def validate_array_shape(self):
         if self.data_type == "array" and not self.child_schema:

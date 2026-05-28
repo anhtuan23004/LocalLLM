@@ -32,7 +32,8 @@ Expose LLM inference endpoints on the local network.
 - OCR Extract exposes `POST /api/v1/ocr/classify-segment` and
   `POST /api/v1/ocr/extract` for schema-driven document classification and
   extraction. It accepts image or PDF `file_url`, renders PDF pages to images
-  internally, requires strict structured model output, and calls LiteLLM through
+  internally, rejects private/reserved `file_url` destinations before and after
+  redirects, requires strict structured model output, and calls LiteLLM through
   the configured `LITELLM_MODEL` Gateway Alias.
 - Docker services join `llm-net` and are reachable by container name from other services.
 - Healthchecks defined: Ollama via `ollama list`, vLLM via curl `/health`, SGLang via curl `/health`.

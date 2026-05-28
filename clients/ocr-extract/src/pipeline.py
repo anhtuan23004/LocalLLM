@@ -175,24 +175,31 @@ def normalize_extracted_data(group: ExtractionGroupSchema, payload: dict[str, An
 
 def normalize_field_value(field: FieldSchema, value: Any) -> Any:
     if value is None:
+        if not field.nullable:
+            raise ValueError(f"{field.field_key} must not be null")
         return None
     if field.data_type in {"string", "date"}:
         if not isinstance(value, str):
-            raise ValueError(f"{field.field_key} must be a string or null")
+            raise ValueError(type_error_message(field, "string"))
         return value
     if field.data_type == "number":
         if not isinstance(value, (int, float)) or isinstance(value, bool):
-            raise ValueError(f"{field.field_key} must be a number or null")
+            raise ValueError(type_error_message(field, "number"))
         return value
     if field.data_type == "boolean":
         if not isinstance(value, bool):
-            raise ValueError(f"{field.field_key} must be a boolean or null")
+            raise ValueError(type_error_message(field, "boolean"))
         return value
     if field.data_type == "array":
         if not isinstance(value, list):
-            raise ValueError(f"{field.field_key} must be an array or null")
+            raise ValueError(type_error_message(field, "array"))
         return [normalize_array_item(field, item) for item in value]
     return value
+
+
+def type_error_message(field: FieldSchema, type_name: str) -> str:
+    suffix = " or null" if field.nullable else ""
+    return f"{field.field_key} must be a {type_name}{suffix}"
 
 
 def normalize_array_item(field: FieldSchema, item: Any) -> dict[str, Any]:
