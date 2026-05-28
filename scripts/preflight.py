@@ -189,23 +189,50 @@ def host_model_path(service: str, container_path: str) -> Path | None:
     return root_path / container_path.removeprefix("/models/")
 
 
+def validate_mounted_model_path(
+    service: str,
+    key: str,
+    container_path: str,
+    failures: list[str],
+    warnings: list[str],
+    *,
+    required: bool,
+) -> bool:
+    if not container_path:
+        if required:
+            warnings.append(f"{service}: no {key} configured")
+        return False
+    if not container_path.startswith("/models/"):
+        failures.append(f"{service}: {key} must use the mounted /models/... path, got: {container_path}")
+        return False
+    host_path = host_model_path(service, container_path)
+    if host_path is not None and not host_path.exists():
+        failures.append(f"{service}: configured {key} does not exist on host: {host_path}")
+        return False
+    return True
+
+
 def check_model_compatibility(service: str, failures: list[str], warnings: list[str]) -> None:
     model_key = SERVICES[service].get("model_key")
     if not model_key:
         return
     env = load_env(service)
     model_path = env.get(str(model_key), "")
-    if not model_path:
-        warnings.append(f"{service}: no {model_key} configured")
+    if not validate_mounted_model_path(service, str(model_key), model_path, failures, warnings, required=True):
         return
-    host_path = host_model_path(service, model_path)
-    if host_path is not None and not host_path.exists():
-        failures.append(f"{service}: configured model path does not exist on host: {host_path}")
-        return
+    if service == "llama.cpp":
+        validate_mounted_model_path(
+            service,
+            "LLAMA_CPP_MMPROJ_PATH",
+            env.get("LLAMA_CPP_MMPROJ_PATH", ""),
+            failures,
+            warnings,
+            required=False,
+        )
+        if model_path.endswith(".gguf"):
+            return
     model = find_model_by_container_path(model_path)
     if not model:
-        if service == "llama.cpp" and model_path.endswith(".gguf"):
-            return
         warnings.append(f"{service}: {model_path} is not registered in models/registry.yaml")
         return
     model_id = str(model.get("id", "?"))
