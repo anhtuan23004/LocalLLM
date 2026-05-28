@@ -45,6 +45,19 @@ services:
     restart: unless-stopped
 
 
+  ollama-exporter:
+    build: .
+    container_name: ollama-exporter
+    entrypoint: ["python", "/app/scripts/ollama_exporter.py"]
+    environment:
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      OLLAMA_EXPORTER_PORT: 9101
+    volumes:
+      - ./scripts:/app/scripts
+    networks:
+      - llm-net
+    restart: unless-stopped
+
   nvidia-gpu-exporter:
     image: utkuozdemir/nvidia_gpu_exporter:1.2.1
     container_name: nvidia-gpu-exporter
