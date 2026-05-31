@@ -1,6 +1,6 @@
 services:
   vllm:
-    image: vllm/vllm-openai:${VLLM_IMAGE_TAG}
+    image: vllm/vllm-openai:${VLLM_IMAGE_TAG:-v0.6.6.post1}
     command: >
       --model ${VLLM_MODEL_PATH}
       --served-model-name ${VLLM_SERVED_MODEL_NAME}

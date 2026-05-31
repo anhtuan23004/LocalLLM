@@ -8,6 +8,7 @@ contract derived from repository intake.
 - `HARNESS.md`: how humans and agents collaborate.
 - `FEATURE_INTAKE.md`: how prompts become tiny, normal, or high-risk work.
 - `ARCHITECTURE.md`: architecture discovery and boundary rules.
+- `ARCHITECTURE_AUDIT.md`: current architecture audit, risks, and future direction.
 - `TEST_MATRIX.md`: living map of behavior to proof.
 - `HARNESS_BACKLOG.md`: improvements discovered while working.
 - `GLOSSARY.md`: shared terms.
@@ -25,8 +26,9 @@ contract derived from repository intake.
 ## Current State
 
 Harness v0 is active and LLM-Local infrastructure exists. These docs define how
-the project should grow from here. Automated validation proof, CI, and a
-top-level validation command contract do not exist yet.
+the project should grow from here. A top-level validation command contract now
+exists in `config/validation-commands.yaml`; CI and evidence freshness
+automation remain future harness work.
 
 ## Documentation Architecture
 

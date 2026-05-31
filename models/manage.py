@@ -10,6 +10,10 @@ yaml.default_flow_style = False
 
 MODELS_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(MODELS_DIR)
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
+
+from llm_local.catalog import format_targets, runtime_env_map
 
 
 def load_registry():
@@ -66,30 +70,8 @@ def rm_model(model_id, force=False):
     assemble(MODELS_DIR)
 
 
-RUNTIME_ENV_MAP = {
-    "vllm": {
-        "dir": "serving/vllm",
-        "keys": {"VLLM_MODEL_PATH": "/models/{name}", "VLLM_SERVED_MODEL_NAME": "{repo}"},
-    },
-    "sglang": {
-        "dir": "serving/sglang",
-        "keys": {"SGLANG_MODEL_PATH": "/models/{name}"},
-    },
-    "llama.cpp": {
-        "dir": "serving/llama.cpp",
-        "keys": {"LLAMA_CPP_MODEL_PATH": "/models/{name}"},
-    },
-    "mlx": {
-        "dir": "serving/mlx",
-        "keys": {"MLX_MODEL": "{path}"},
-    },
-}
-
-FORMAT_TARGETS = {
-    "safetensors": {"vllm", "sglang", "mlx"},
-    "pytorch": {"vllm", "sglang", "mlx"},
-    "gguf": {"llama.cpp", "ollama"},
-}
+RUNTIME_ENV_MAP = runtime_env_map()
+FORMAT_TARGETS = format_targets()
 
 
 def resolve_model(model_id, runtime="vllm"):

@@ -8,6 +8,10 @@ from pathlib import Path
 
 from ruamel.yaml import YAML
 
+if str(Path(__file__).resolve().parents[1]) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from llm_local.catalog import gateway_alias, litellm_model_keys
 from manage import RUNTIME_ENV_MAP, resolve_model, select_model
 
 
@@ -18,13 +22,7 @@ STATE_DIR = ROOT / "config" / "active"
 ACTIVE_FILE = STATE_DIR / "serving.yaml"
 LITELLM_DIR = ROOT / "serving" / "litellm"
 
-LITELLM_MODEL_KEYS = {
-    "ollama": "OLLAMA_LITELLM_MODEL",
-    "vllm": "VLLM_LITELLM_MODEL",
-    "sglang": "SGLANG_LITELLM_MODEL",
-    "llama.cpp": "LLAMA_CPP_LITELLM_MODEL",
-    "mlx": "MLX_LITELLM_MODEL",
-}
+LITELLM_MODEL_KEYS = litellm_model_keys()
 
 
 def load_presets():
@@ -93,17 +91,17 @@ def show_preset(preset_id):
 def preset_for_registry_model(preset_id, model_id, runtime, alias=None):
     match = resolve_model(model_id, runtime=runtime)
     gateway_model = match.get("repo", model_id)
-    gateway_alias = alias or f"local-{runtime.replace('.', '-')}"
+    resolved_alias = alias or gateway_alias(runtime) or f"local-{runtime.replace('.', '-')}"
     return {
         "id": preset_id,
-        "description": f"{model_id} through {runtime} and the {gateway_alias} LiteLLM alias.",
+        "description": f"{model_id} through {runtime} and the {resolved_alias} LiteLLM alias.",
         "runtime": runtime,
         "model": {
             "type": "registry",
             "id": model_id,
         },
         "gateway": {
-            "alias": gateway_alias,
+            "alias": resolved_alias,
             "provider": "openai",
             "model": gateway_model,
         },
@@ -115,17 +113,17 @@ def preset_for_registry_model(preset_id, model_id, runtime, alias=None):
 
 
 def preset_for_ollama_model(preset_id, model_name, alias=None):
-    gateway_alias = alias or "local-ollama"
+    resolved_alias = alias or gateway_alias("ollama") or "local-ollama"
     return {
         "id": preset_id,
-        "description": f"{model_name} through Ollama and the {gateway_alias} LiteLLM alias.",
+        "description": f"{model_name} through Ollama and the {resolved_alias} LiteLLM alias.",
         "runtime": "ollama",
         "model": {
             "type": "ollama",
             "name": model_name,
         },
         "gateway": {
-            "alias": gateway_alias,
+            "alias": resolved_alias,
             "provider": "ollama_chat",
             "model": model_name,
         },
@@ -196,7 +194,7 @@ def add_preset(args):
 
 def suggest_registry_preset(model_id, runtime):
     preset_id = default_preset_id(runtime, model_id)
-    alias = f"local-{runtime.replace('.', '-')}"
+    alias = gateway_alias(runtime) or f"local-{runtime.replace('.', '-')}"
     print("")
     print("Suggested preset:")
     print(
@@ -207,11 +205,12 @@ def suggest_registry_preset(model_id, runtime):
 
 def suggest_ollama_preset(model_name):
     preset_id = default_preset_id("ollama", model_name)
+    alias = gateway_alias("ollama") or "local-ollama"
     print("")
     print("Suggested preset:")
     print(
         f"./llm-local preset add --from-ollama {model_name} "
-        f"--alias local-ollama --id {preset_id}"
+        f"--alias {alias} --id {preset_id}"
     )
 
 

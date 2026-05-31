@@ -46,6 +46,7 @@ not mark a row implemented until tests or validation evidence exist.
 | Cross-S03 | Startup guardrails catch GPU contention, port conflicts, unhealthy services, and invalid model/runtime combinations early | yes | yes | no | yes | implemented | docs/stories/epics/cross/Cross-S03-runtime-guardrails.md |
 | Cross-S04 | Compose configuration matches product contracts | n/a | yes | no | no | implemented | docs/stories/epics/cross/Cross-S04-compose-contract-drift.md |
 | Cross-S05 | Smoke script guards compose, scripts, registry, and dashboard artifacts | yes | yes | no | no | implemented | docs/stories/epics/cross/Cross-S05-smoke-regression-guard.md |
+| Cross-S07 | Runtime catalog centralizes service facts, CLI routing, validation ladder, and pinned image defaults | yes | yes | no | no | implemented | docs/stories/epics/cross/Cross-S07-runtime-contract-control-plane.md |
 
 ## Evidence Rules
 

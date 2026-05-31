@@ -1,6 +1,6 @@
 services:
   ollama:
-    image: ollama/ollama:latest
+    image: ollama/ollama:${OLLAMA_IMAGE_TAG:-0.24.0}
     container_name: ollama
     ports:
       - "${HOST_PORT:-18134}:${CONTAINER_PORT:-11434}"

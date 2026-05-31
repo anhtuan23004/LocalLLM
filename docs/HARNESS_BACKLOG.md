@@ -65,7 +65,7 @@ tiny
 
 ### Status
 
-proposed
+implemented by `docs/stories/epics/cross/Cross-S07-runtime-contract-control-plane.md`
 
 ## Missing Harness Capability
 
@@ -95,7 +95,7 @@ normal
 
 ### Status
 
-proposed
+implemented by `docs/stories/epics/cross/Cross-S07-runtime-contract-control-plane.md`
 
 ## Missing Harness Capability
 
