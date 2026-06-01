@@ -107,6 +107,9 @@ Benchmark model serving endpoints for latency and quality.
 - Runs `lm_eval` through `run_lm_eval.sh` for quality evaluation against OpenAI-compatible serving endpoints.
 - Uses `local-chat-completions` by default with `--apply_chat_template`, `--batch_size 1`, and env-configured model/task/endpoint values.
 - Defaults to a small smoke run (`LM_EVAL_TASKS=gsm8k`, `LM_EVAL_LIMIT=10`) so local validation is bounded on a 12GB VRAM target.
+- Runs `run_cccd_gt_eval.py` from the repo root to evaluate a vision LiteLLM
+  alias against the CCCD ground-truth JSONL splits, using strict JSON schema
+  response format and writing summary/detail artifacts under `evaluation/results/`.
 - Results saved to `evaluation/results/` (bind-mounted).
 - Reaches serving endpoints via `llm-net` by container name.
 

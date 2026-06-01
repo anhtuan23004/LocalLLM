@@ -27,3 +27,4 @@ config/active/serving.yaml
 evaluation/results/*.json
 observation/dashboards/*.png
 observation/dashboards/*.csv
+datasets/

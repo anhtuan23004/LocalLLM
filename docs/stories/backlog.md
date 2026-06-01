@@ -40,6 +40,7 @@ These are ready to slice into story packets when selected:
 - **E02-S01**: Validate Unsloth Jupyter accessible and can import unsloth. _(implemented — see `docs/stories/epics/training/E02-S01-unsloth-jupyter-gpu.md`)_
 - **E03-S01**: Run benchmark against Ollama, verify JSON output schema. _(implemented — see `docs/stories/epics/evaluation/E03-S01-benchmark-produces-valid-json.md`)_
 - **E03-S02**: Run lm-eval-harness smoke quality eval against vLLM/OpenAI-compatible endpoint. _(implemented — see `docs/stories/epics/evaluation/E03-S02-lm-eval-harness-quality.md`)_
+- **E03-S03**: Evaluate CCCD ground-truth OCR outputs through a LiteLLM vision alias. _(implemented — see `docs/stories/epics/evaluation/E03-S03-cccd-gt-litellm-eval.md`)_
 - **E04-S01**: Run observation against existing results, verify CSV + chart output. _(implemented — see `docs/stories/epics/observation/E04-S01-observation-produces-csv-chart.md`)_
 - **E05-S01**: Download a small model, verify directory structure and file presence. _(implemented — see `docs/stories/epics/model-management/E05-S01-download-model.md`)_
 - **E05-S02**: Add model registry YAML and placeholder conversion commands. _(implemented — see `docs/stories/epics/model-management/E05-S02-model-registry.md`)_
