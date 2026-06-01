@@ -314,6 +314,9 @@ def main() -> int:
     any_request_success = False
     for side in splits:
         dataset_path = args.dataset_dir.resolve() / side / "train.jsonl"
+        if not dataset_path.is_file():
+            print(f"ERROR: dataset not found: {dataset_path}", file=sys.stderr)
+            return 1
         records = load_dataset(dataset_path, limit=args.limit)
         details = [
             evaluate_record(

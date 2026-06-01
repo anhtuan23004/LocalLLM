@@ -40,7 +40,8 @@ with timestamped files:
 - `front/<model>_<HHMMSS>_details.json`: one debug record per front-side sample.
 - `back/<model>_<HHMMSS>_details.json`: one debug record per back-side sample.
 
-The evaluator uses exact JSON equality and exact per-field equality. It does
-not normalize dates, casing, whitespace, names, or punctuation before scoring.
+The evaluator compares string values after Unicode NFKC normalization, trimmed
+and collapsed whitespace, and case-insensitive matching. It does not parse or
+reformat dates beyond those string normalizations.
 Each detail record includes `expected`, `predicted`, `raw_response`,
 `field_matches`, request status, parse/schema status, error, and latency.

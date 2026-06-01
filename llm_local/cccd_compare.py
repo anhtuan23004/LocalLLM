@@ -79,7 +79,7 @@ def schema_errors(payload: dict[str, Any], side: str) -> list[str]:
             if actual is not None and not isinstance(actual, str):
                 errors.append(f"{path} must be string or null")
             return
-        if compare_cccd_values(actual, expected) is False:
+        if actual != expected:
             errors.append(f"{path} must equal {expected!r}")
 
     visit(template, payload, "")

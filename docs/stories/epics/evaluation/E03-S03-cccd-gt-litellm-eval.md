@@ -47,7 +47,9 @@ and per-sample detail artifacts into daily directories under
   root and does not require changing `evaluation/docker-compose.yml`.
 - Shared CCCD prompt/schema helpers live in `llm_local.cccd_schema` so dataset
   generation and evaluation use the same contract.
-- Scoring is exact string/JSON equality only; no fuzzy normalization is applied.
+- Scoring compares strings after Unicode NFKC normalization, trimmed and
+  collapsed whitespace, and case-insensitive matching; it does not do fuzzy or
+  semantic matching beyond that.
 
 ## Validation
 
@@ -72,7 +74,7 @@ $ python -m py_compile llm_local/cccd_schema.py datasets/prepare_cccd_qwen3_vl.p
 # exits 0
 
 $ python -m unittest evaluation.tests.test_cccd_gt_eval
-# exits 0; 7 tests run
+# exits 0; 8 tests run
 
 $ python datasets/prepare_cccd_qwen3_vl.py
 # emits 313 front records and 31 back records

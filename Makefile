@@ -116,7 +116,7 @@ eval-quality: ## Run lm-eval quality benchmark against vLLM
 
 eval-cccd-gt: MODEL ?= local-vllm
 eval-cccd-gt: ## Evaluate CCCD ground truth through LiteLLM (MODEL=x SPLIT=all LIMIT=x)
-	python evaluation/scripts/run_cccd_gt_eval.py --model $(MODEL) --base-url $(CCCD_EVAL_BASE_URL) --split $(SPLIT) $(if $(LIMIT),--limit $(LIMIT),)
+	python3 evaluation/scripts/run_cccd_gt_eval.py --model $(MODEL) --base-url $(CCCD_EVAL_BASE_URL) --split $(SPLIT) $(if $(LIMIT),--limit $(LIMIT),)
 
 # --- Validation ---
 

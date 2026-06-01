@@ -203,6 +203,26 @@ class CccdGtEvalTests(unittest.TestCase):
         self.assertIn("fields.place_of_residence is missing", errors)
         self.assertIn("fields.extra is not allowed", errors)
 
+    def test_schema_errors_rejects_enum_casing_mismatch(self) -> None:
+        payload = {
+            "document_type": "CCCD",
+            "side": "front",
+            "fields": {
+                "id_number": "001",
+                "full_name": "A",
+                "date_of_birth": None,
+                "gender": None,
+                "nationality": None,
+                "place_of_origin": None,
+                "date_of_expiry": None,
+                "place_of_residence": None,
+            },
+        }
+
+        errors = gt_eval.schema_errors(payload, "front")
+
+        self.assertIn("document_type must equal 'cccd'", errors)
+
     def test_write_json_writes_array_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "details.json"
