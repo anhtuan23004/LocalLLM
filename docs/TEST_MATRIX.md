@@ -26,6 +26,7 @@ not mark a row implemented until tests or validation evidence exist.
 | E02-S01 | Unsloth Jupyter accessible with GPU | no | yes | no | yes | implemented | docs/stories/epics/training/E02-S01-unsloth-jupyter-gpu.md |
 | E03-S01 | Benchmark produces valid JSON with latency stats | no | yes | no | no | implemented | docs/stories/epics/evaluation/E03-S01-benchmark-produces-valid-json.md |
 | E03-S02 | lm-eval-harness quality eval service is configured for OpenAI-compatible endpoint | no | yes | no | no | implemented | docs/stories/epics/evaluation/E03-S02-lm-eval-harness-quality.md |
+| E03-S03 | CCCD ground-truth evaluator scores LiteLLM vision output against split JSONL labels | yes | yes | no | no | implemented | docs/stories/epics/evaluation/E03-S03-cccd-gt-litellm-eval.md |
 | E04-S01 | Observation produces CSV summary + latency chart | no | yes | no | no | implemented | docs/stories/epics/observation/E04-S01-observation-produces-csv-chart.md |
 | E05-S01 | download_model.py fetches model to correct path | no | yes | no | no | implemented | docs/stories/epics/model-management/E05-S01-download-model.md |
 | E05-S02 | Model registry YAML and conversion entrypoint exist | yes | no | no | no | implemented | docs/stories/epics/model-management/E05-S02-model-registry.md |

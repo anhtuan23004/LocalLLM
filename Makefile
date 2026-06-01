@@ -6,13 +6,15 @@
        train-up train-down \
        observe-up observe-down observe-batch \
        preset-list preset-apply config-render \
-       benchmark-ollama benchmark-vllm benchmark-litellm eval-quality \
+       benchmark-ollama benchmark-vllm benchmark-litellm eval-quality eval-cccd-gt \
        validate validate-compose validate-health validate-registry \
        validate-quick test-integration test-platform release-check \
        guardrails smoke down help
 
 N ?= 10
 PROMPT ?= Explain briefly what a neural network is.
+SPLIT ?= all
+CCCD_EVAL_BASE_URL ?= http://localhost:18040/v1
 
 # --- Serving ---
 
@@ -111,6 +113,10 @@ benchmark-litellm: ## Benchmark LiteLLM gateway (MODEL=local-ollama N=x)
 
 eval-quality: ## Run lm-eval quality benchmark against vLLM
 	./llm-local eval quality
+
+eval-cccd-gt: MODEL ?= local-vllm
+eval-cccd-gt: ## Evaluate CCCD ground truth through LiteLLM (MODEL=x SPLIT=all LIMIT=x)
+	python evaluation/scripts/run_cccd_gt_eval.py --model $(MODEL) --base-url $(CCCD_EVAL_BASE_URL) --split $(SPLIT) $(if $(LIMIT),--limit $(LIMIT),)
 
 # --- Validation ---
 

@@ -238,6 +238,16 @@ Quality evaluation through lm-eval-harness:
 cd evaluation && docker compose --profile quality run --rm lm-eval
 ```
 
+Evaluate a vision model against the CCCD ground-truth dataset through LiteLLM:
+
+```bash
+make eval-cccd-gt MODEL=local-vllm SPLIT=all
+# quick smoke
+make eval-cccd-gt MODEL=local-vllm SPLIT=front LIMIT=1
+```
+
+See `docs/runbooks/cccd-gt-evaluation.md` for the full runbook.
+
 ### Observation
 
 Real-time monitoring (Prometheus + Grafana):
